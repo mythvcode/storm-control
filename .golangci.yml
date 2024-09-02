@@ -1,0 +1,33 @@
+run:
+  timeout: 5m
+
+
+linters-settings:
+  cyclop:
+    max-complexity: 11
+
+linters:
+  fast: false
+  enable-all: true
+  disable:
+      - dupl
+      - gochecknoglobals
+      - gochecknoinits
+      - lll
+      - funlen
+      - wsl
+      - gomnd
+      - testpackage
+      - goerr113
+      - godot
+      - paralleltest
+      - exhaustivestruct
+      - exhaustruct
+      - wrapcheck
+      - forbidigo
+      - tagliatelle
+      - nonamedreturns
+      - nosnakecase
+      - depguard
+      - perfsprint
+      - mnd

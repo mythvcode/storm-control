@@ -1,0 +1,7 @@
+dir: "{{.InterfaceDir}}/mocks"
+outpkg: "mocks"
+packages:
+  github.com/mythvcode/storm-control/internal/watcher:
+    config:
+      all: True
+
