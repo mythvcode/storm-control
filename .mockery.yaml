@@ -4,4 +4,6 @@ packages:
   github.com/mythvcode/storm-control/internal/watcher:
     config:
       all: True
-
+  github.com/mythvcode/storm-control/internal/exporter:
+    config:
+      all: True

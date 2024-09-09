@@ -12,8 +12,9 @@ import (
 )
 
 type StormControlConfig struct {
-	Watcher WatcherConfig `yaml:"watcher"`
-	Logger  LoggerConfig  `yaml:"logger"`
+	Watcher  WatcherConfig `yaml:"watcher"`
+	Logger   LoggerConfig  `yaml:"logger"`
+	Exporter Exporter      `yaml:"exporter"`
 }
 
 type LoggerConfig struct {
@@ -27,6 +28,16 @@ type WatcherConfig struct {
 	BlockThreshold uint64   `default:"10"             env:"BLOCK_THRESHOLD" yaml:"block_threshold"`
 	StaticDevList  []string `default:"[]"             env:"STATIC_DEV_LIST" yaml:"device_list"`
 	DevRegEx       string   `default:"^tap.{8}-.{2}$" env:"DEV_REGEX"       yaml:"device_regex"`
+}
+
+type Exporter struct {
+	ServerAddress        string `default:"localhost" env:"EXPORTER_HOST"                   yaml:"server_address"`
+	ServerPort           int    `default:"8080"      env:"EXPORTER_PORT"                   yaml:"server_port"`
+	RequestTimeout       int    `default:"10"        env:"EXPORTER_REQUEST_TIMEOUT"        yaml:"request_timeout"`
+	TelemetryPath        string `default:"/metrics"  env:"EXPORTER_TELEMETRY_PATH"         yaml:"telemetry_path"`
+	Enable               bool   `default:"true"      env:"EXPORTER_ENABLE"                 yaml:"enable"`
+	EnableRequestLogging bool   `default:"true"      env:"EXPORTER_ENABLE_REQUEST_LOGGING" yaml:"enable_request_logging"`
+	EnableRuntimeMetrics bool   `default:"false"     env:"EXPORTER_ENABLE_RUNTIME_METRICS" yaml:"enable_runtime_metrics"`
 }
 
 func (c *StormControlConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
