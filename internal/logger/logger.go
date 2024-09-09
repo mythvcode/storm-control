@@ -9,7 +9,7 @@ import (
 	slogmulti "github.com/samber/slog-multi"
 )
 
-const Module = "module"
+const Component = "component"
 
 type Logger struct {
 	logger *slog.Logger

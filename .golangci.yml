@@ -6,6 +6,11 @@ linters-settings:
   cyclop:
     max-complexity: 11
 
+  promlinter:
+    disabled-linters:
+    - Counter
+    - HistogramSummaryReserved
+
 linters:
   fast: false
   enable-all: true
@@ -31,3 +36,4 @@ linters:
       - depguard
       - perfsprint
       - mnd
+      - promlinter

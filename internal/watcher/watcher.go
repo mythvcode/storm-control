@@ -8,7 +8,6 @@ import (
 
 	"github.com/cilium/ebpf"
 	"github.com/mythvcode/storm-control/internal/config"
-	"github.com/mythvcode/storm-control/internal/ebpfloader"
 	"github.com/mythvcode/storm-control/internal/logger"
 )
 
@@ -40,11 +39,7 @@ func isDevExist(devLis []net.Interface, index int) bool {
 	return false
 }
 
-func New(cfg config.StormControlConfig) (*Watcher, error) {
-	prog, err := ebpfloader.LoadCollection()
-	if err != nil {
-		return nil, err
-	}
+func New(cfg config.StormControlConfig, prog eBPFProg) (*Watcher, error) {
 	regExp, err := regexp.Compile(cfg.Watcher.DevRegEx)
 	if err != nil {
 		return nil, err
@@ -56,7 +51,7 @@ func New(cfg config.StormControlConfig) (*Watcher, error) {
 		config:        cfg.Watcher,
 		netDevReg:     regExp,
 		closed:        make(chan struct{}),
-		log:           logger.GetLogger().With(slog.String(logger.Module, "Watcher")),
+		log:           logger.GetLogger().With(slog.String(logger.Component, "Watcher")),
 	}, nil
 }
 
@@ -160,7 +155,10 @@ func (w *Watcher) startDynamicWatcher() {
 }
 
 func (w *Watcher) Start() {
-	w.log.Infof("Start device watcher")
+	w.log.Infof("Start device watcher drop")
+	if !w.config.BlockEnabled {
+		w.log.Warningf("Block action disabled!")
+	}
 	w.startDynamicWatcher()
 }
 
@@ -175,6 +173,5 @@ func (w *Watcher) StopDevWatchers() {
 	for _, devWatcher := range w.devWatcherMap {
 		devWatcher.stop()
 		w.ebpfProg.ForceDetachXDP(devWatcher.index())
-
 	}
 }

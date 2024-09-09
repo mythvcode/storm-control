@@ -87,7 +87,7 @@ func newNetDevWatcher(
 	statsMap, dropMap EBPFMap,
 ) *netDevWatcher {
 	return &netDevWatcher{
-		netDevIndex:      uint32(netDev),
+		netDevIndex:      uint32(netDev), //nolint
 		netDevName:       netDevName,
 		blockThreshold:   blockThreshold,
 		unblockThreshold: blockThreshold * 3,
@@ -95,7 +95,7 @@ func newNetDevWatcher(
 		dropMap:          dropMap,
 		dropDelay:        dropDelay,
 		stopChan:         make(chan struct{}),
-		log:              logger.GetLogger().With(slog.String(logger.Module, "NetDevWatcher")),
+		log:              logger.GetLogger().With(slog.String(logger.Component, "NetDevWatcher")),
 	}
 }
 
