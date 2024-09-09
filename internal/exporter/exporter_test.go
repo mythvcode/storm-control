@@ -36,3 +36,21 @@ func TestCollector(t *testing.T) {
 	err = testutil.CollectAndCompare(collector, strings.NewReader(raw))
 	require.NoError(t, err)
 }
+
+func TestCollectorClearValues(t *testing.T) {
+	listInterfaces = func() ([]net.Interface, error) {
+		return []net.Interface{{Index: 5653, Name: "tap72cdd785-3a"}}, nil
+	}
+	mock := mocks.NewMockStatsLoader(t)
+	raw, stats := makeTestValues(t)
+	mock.EXPECT().GetStatistic().Return(stats, nil).Once()
+	collector := newStormControlCollector(mock)
+
+	err := testutil.CollectAndCompare(collector, strings.NewReader(raw))
+	require.NoError(t, err)
+
+	raw, stats = makeZeroTestValues(t)
+	mock.EXPECT().GetStatistic().Return(stats, nil).Once()
+	err = testutil.CollectAndCompare(collector, strings.NewReader(raw))
+	require.NoError(t, err)
+}
