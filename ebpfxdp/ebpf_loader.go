@@ -32,7 +32,7 @@ type DropPKT struct {
 	Multicast uint8
 }
 
-//go:embed xdp_kernel.o
+//go:embed kernel/xdp_kernel.o
 var KernelProgramBytes []byte
 
 func getSpecs() (specs *ebpf.CollectionSpec, err error) {

@@ -42,6 +42,7 @@ func main() {
 	eBPFProg, err := ebpfloader.LoadCollection()
 	if err != nil {
 		logger.GetLogger().Errorf("Error load eBPF program %s", err.Error())
+		os.Exit(1)
 	}
 	netWatcher, err := watcher.New(cfg, eBPFProg)
 	if err != nil {

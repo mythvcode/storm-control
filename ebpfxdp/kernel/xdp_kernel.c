@@ -21,15 +21,6 @@ struct {
     __uint(max_entries, CONFIG_MAP_MAX_ELEMENT);
 } drop_intf SEC(".maps");
 
-/* Helper macro to print out debug messages */
-#define bpf_printk(fmt, ...)                            \
-({                                                      \
-        char ____fmt[] = fmt;                           \
-        bpf_trace_printk(____fmt, sizeof(____fmt),      \
-                         ##__VA_ARGS__);                \
-})
-
-
 static __always_inline int proto_is_vlan(__u16 h_proto) {
     return !!(h_proto == bpf_htons(ETH_P_8021Q) ||
               h_proto == bpf_htons(ETH_P_8021AD));
@@ -121,6 +112,3 @@ int storm_control(struct xdp_md *ctx)
     return calculate_pkt(eth, ctx->ingress_ifindex, bpf_ntohs(get_h_proto(eth, data_end)));
 
 }
-
-char _license[] SEC("license") = "GPL";
-
