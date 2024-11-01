@@ -3,13 +3,13 @@
 
 ## Overview
 
-This utility delivers two main capabilities:
+This program provides two primary functionalities.
 
 1. **Prometheus Exporter of broadcast amd multicast packets**: 
    - Exports counters for broadcast and multicast packets(classified by multicast type).
    
 2. **Storm Control Mechanism**: 
-   - Control broadcast and multicast packet rate thresholds.
+   - Control broadcast and multicast packet rate based on configured thresholds.
 
 Leveraging **eBPF XDP technology**, it was originally designed to monitor traffic from virtual machines in QEMU/KVM hypervisors, but it can also be applied to other scenarios.
 It can be deployed in OpenStack OVS/OVN SDN environments to monitor and block broadcast and multicast traffic based on configured thresholds. 
