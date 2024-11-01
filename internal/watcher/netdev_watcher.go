@@ -25,7 +25,6 @@ const (
 	blockAction   = 2
 )
 
-//go:generate go run github.com/vektra/mockery/v2@v2.45.0 --name=EBPFMap
 type EBPFMap interface {
 	Lookup(key, valueOut interface{}) error
 	Update(key, value any, flags ebpf.MapUpdateFlags) error
@@ -228,7 +227,13 @@ func (n *netDevWatcher) watchUnblock(trafType int) {
 	}
 	defer n.releaseBlockState(trafType)
 
-	<-time.After(n.dropDelay)
+	timer := time.NewTimer(n.dropDelay)
+	defer timer.Stop()
+	select {
+	case <-n.stopChan:
+		return
+	case <-timer.C:
+	}
 
 	prevStats, err := n.getStats()
 	if err != nil {
