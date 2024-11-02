@@ -8,7 +8,7 @@ build_xdp:
 	clang  -target bpf -I ${LIBC_HEADERS} -g -O2 -o ./ebpfxdp/kernel/xdp_kernel.o -c ebpfxdp/kernel/xdp_kernel.c
 
 tests:
-	go test -v ./...;\
+	go test -v ./...
 
 lint:
 	golangci-lint run -v ./...
