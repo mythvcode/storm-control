@@ -3,7 +3,7 @@
 The program can be configured in two ways: by using a YAML configuration file or by using environment variables. If a configuration file is specified like `./storm-control -config config.yaml`, then **environment variables are not used.**
 
 ## Example of config file
-![Program Structure](./config_example.yaml)
+[Config](./config_example.yaml)
 
 
 
