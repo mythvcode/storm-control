@@ -23,9 +23,9 @@ type LoggerConfig struct {
 }
 
 type WatcherConfig struct {
-	BlockDelay     int      `default:"0"              env:"BLOCK_DELAY"     yaml:"block_delay"`
+	BlockDelay     int      `default:"10"             env:"BLOCK_DELAY"     yaml:"block_delay"`
 	BlockEnabled   bool     `default:"false"          env:"BLOCK_ENABLED"   yaml:"block_enabled"`
-	BlockThreshold uint64   `default:"10"             env:"BLOCK_THRESHOLD" yaml:"block_threshold"`
+	BlockThreshold uint64   `default:"100"            env:"BLOCK_THRESHOLD" yaml:"block_threshold"`
 	StaticDevList  []string `default:"[]"             env:"STATIC_DEV_LIST" yaml:"device_list"`
 	DevRegEx       string   `default:"^tap.{8}-.{2}$" env:"DEV_REGEX"       yaml:"device_regex"`
 }

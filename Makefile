@@ -11,3 +11,21 @@ tests:
 
 lint:
 	golangci-lint run -v ./...
+
+
+create_test_files:
+	@if [ ! -f ebpfxdp/kernel/xdp_kernel.o ]; then\
+	    echo "create ebpfxdp/kernel/xdp_kernel.o";\
+		touch ebpfxdp/kernel/xdp_kernel.o;\
+	else\
+		echo "file ebpfxdp/kernel/xdp_kernel.o aready exist";\
+	fi
+
+clean:
+	@if [ ! -s ebpfxdp/kernel/xdp_kernel.o ]; then\
+		echo "rm -rf ebpfxdp/kernel/xdp_kernel.o";\
+		rm -rf ebpfxdp/kernel/xdp_kernel.o;\
+	else\
+		echo "file ebpfxdp/kernel/xdp_kernel.o not empty, skip deletion";\
+	fi
+	rm -rf ./storm-control

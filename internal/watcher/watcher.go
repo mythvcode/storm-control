@@ -60,7 +60,7 @@ func (w *Watcher) makeNetDevWatcher(netDev int, netDevName string) *netDevWatche
 		netDev,
 		netDevName,
 		w.config.BlockThreshold,
-		time.Duration(w.config.BlockDelay),
+		time.Duration(w.config.BlockDelay)*time.Second,
 		w.ebpfProg.GetStatsMap(),
 		w.ebpfProg.GetDropMap(),
 	)

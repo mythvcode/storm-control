@@ -1,0 +1,19 @@
+---
+# Logger options.
+logger:
+  file: 
+  level: debug
+watcher:
+  block_delay: 10 # seconds
+  block_enabled: false
+  block_threshold: 100 # packet count per second
+  device_list: []
+  device_regex: ^tap.{8}-.{2}$
+exporter:
+  enable: true
+  enable_request_logging: true
+  enable_runtime_metrics: false
+  server_address: localhost
+  server_port:    8080
+  request_timeout: 10
+  telemetry_path: "/metrics"

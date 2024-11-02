@@ -3,4 +3,5 @@
 .idea/
 # binary
 storm-control
+xdp_kernel.o
 
