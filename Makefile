@@ -1,5 +1,4 @@
 LIBC_HEADERS=/usr/include/x86_64-linux-gnu
-PATH_TO_FILE=ebpfxdp/kernel/xdp_kernel.o
 
 build:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o storm-control ./cmd/stormcontrol
