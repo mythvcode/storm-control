@@ -1,5 +1,8 @@
 # Storm Control
 
+## Requirements
+Linux kernel version 5.7+
+
 ## Overview
 This program provides two primary functionalities:
 1. **Prometheus Exporter of broadcast and multicast packets**: 

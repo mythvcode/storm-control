@@ -86,7 +86,7 @@ func newNetDevWatcher(
 	statsMap, dropMap EBPFMap,
 ) *netDevWatcher {
 	return &netDevWatcher{
-		netDevIndex:      uint32(netDev), //nolint
+		netDevIndex:      uint32(netDev),
 		netDevName:       netDevName,
 		blockThreshold:   blockThreshold,
 		unblockThreshold: blockThreshold * 3,
