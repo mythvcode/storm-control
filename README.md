@@ -12,6 +12,12 @@ This program provides two primary functionalities:
 
 Leveraging **eBPF XDP technology**, it was originally designed to monitor traffic from virtual machines in QEMU/KVM hypervisors but can also be applied to other scenarios. It can be deployed in OpenStack OVS/OVN SDN environments to monitor and block broadcast and multicast traffic based on configured thresholds. The storm control feature is optional and can be disabled if not required.
 
+## Config and metrics
+
+[Configuration doc](./docs/config_options.md)
+
+[Metric doc](./docs/metrics.md)
+
 ## Workflow Description
 1. Initially, the program searches for interfaces to attach based on the `device_regex` or `device_list` configuration options.
 2. Then, it attaches the eBPF XDP program to the identified interfaces and starts counting the packets arriving from these interfaces.
