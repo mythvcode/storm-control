@@ -14,9 +14,9 @@ Leveraging **eBPF XDP technology**, it was originally designed to monitor traffi
 
 ## Config and metrics
 
-[Configuration doc](./docs/config_options.md)
+[Configuration documentation](./docs/config_options.md)
 
-[Metric doc](./docs/metrics.md)
+[Metrics documentation](./docs/metrics.md)
 
 ## Workflow Description
 1. Initially, the program searches for interfaces to attach based on the `device_regex` or `device_list` configuration options.
