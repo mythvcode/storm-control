@@ -21,7 +21,7 @@ Leveraging **eBPF XDP technology**, it was originally designed to monitor traffi
 ## Workflow Description
 1. Initially, the program searches for interfaces to attach based on the `device_regex` or `device_list` configuration options.
 2. Then, it attaches the eBPF XDP program to the identified interfaces and starts counting the packets arriving from these interfaces.
-3. It counts packets for broadcast, IPv4/IPv6, and unknown multicast traffic. If the packet count exceeds the `block_threshold` configuration, the specific type of traffic (evaluated separately for each type) will be blocked on the specific interface for the duration specified by `block_delay`. Once the `block_delay` period has elapsed, the traffic is unblocked. If the `block_enabled` configuration option is set to False, the traffic will not be blocked. Instead, the program will only count packets and export counters, thus functioning primarily for observability purposes.
+3. It counts packets for broadcast, IPv4/IPv6, and unknown multicast traffic. If the packet rate exceeds the `block_threshold` configuration, the specific type of traffic (evaluated separately for each type) will be blocked on the specific interface for the duration specified by `block_delay`. Once the `block_delay` period has elapsed, the unblock process starts. The process verifies if the packet rate hasn't still exceeded the threshold. If it hasn't, unblock the specific traffic type. If the `block_enabled` configuration option is set to False, the traffic will not be blocked. Instead, the program will only count packets and export counters, functioning primarily for observability purposes.
 
 ## Program Structure
 The program consists of two main parts:
