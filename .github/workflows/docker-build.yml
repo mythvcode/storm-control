@@ -1,0 +1,44 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    tags:
+      - 'v*'       # Тег начинается с 'v', например, 'v1.0', 'v1.1.2', и т.д.
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ vars.GO_VERSION }}
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Build the Go app
+        run: go build -o myapp
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/my-go-app:latest
+            ghcr.io/${{ github.repository_owner }}/my-go-app:${{ github.ref_name }}
