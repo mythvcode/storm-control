@@ -21,7 +21,7 @@ jobs:
       with:
         go-version: ${{ vars.GO_VERSION }}
     - name: Test
-      run: make tests
+      run: make create_test_files && make tests
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -35,3 +35,6 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin ${{ vars.GOLANGCI_LINT_VERSION }}
     - name: Lint
       run: make create_test_files && make lint
+    - name: Clean
+      run: make clean
+       
