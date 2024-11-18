@@ -3,6 +3,14 @@
 
 name: Go
 
+on:
+  push:           # Запуск на каждый коммит
+    branches:     # В любых ветках
+      - '**'
+  pull_request:
+    branches:     # На каждом pull request
+      - '**'
+
 jobs:
 
   build:
