@@ -30,5 +30,7 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ vars.GO_VERSION }}
+    - name: Install golangci-lint
+      run: make install_linter
     - name: Lint
       run: make lint

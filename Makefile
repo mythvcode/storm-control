@@ -1,4 +1,5 @@
 LIBC_HEADERS=/usr/include/x86_64-linux-gnu
+GOLANG_CI_VERSION ?= 'v1.59.1'
 
 build:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o storm-control ./cmd/stormcontrol
@@ -11,3 +12,6 @@ tests:
 
 lint:
 	golangci-lint run -v ./...
+
+install_linter:
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin $(GOLANG_CI_VERSION)
