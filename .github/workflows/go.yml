@@ -33,4 +33,4 @@ jobs:
     - name: Install golangci-lint
       run: make install_linter
     - name: Lint
-      run: make lint
+      run: make create_test_files && make lint

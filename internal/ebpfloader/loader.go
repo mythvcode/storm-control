@@ -61,11 +61,11 @@ func (e *EbfProgram) AttachXDPToNetDevice(ndev int) error {
 
 func (e *EbfProgram) addNetDevToMaps(ndev int) error {
 	tmpMap := e.Collection.Maps[ebpfxdp.StatsMapName]
-	if err := tmpMap.Put(uint32(ndev), ebpfxdp.PacketCounter{}); err != nil { //nolint
+	if err := tmpMap.Put(uint32(ndev), ebpfxdp.PacketCounter{}); err != nil {
 		return err
 	}
 	tmpMap = e.Collection.Maps[ebpfxdp.DropMapName]
-	if err := tmpMap.Put(uint32(ndev), ebpfxdp.DropPKT{}); err != nil { //nolint
+	if err := tmpMap.Put(uint32(ndev), ebpfxdp.DropPKT{}); err != nil {
 		return err
 	}
 
@@ -74,11 +74,11 @@ func (e *EbfProgram) addNetDevToMaps(ndev int) error {
 
 func (e *EbfProgram) removeNetDevFromMaps(ndev int) error {
 	tmpMap := e.Collection.Maps[ebpfxdp.StatsMapName]
-	if err := tmpMap.Delete(uint32(ndev)); err != nil { //nolint
+	if err := tmpMap.Delete(uint32(ndev)); err != nil {
 		return err
 	}
 	tmpMap = e.Collection.Maps[ebpfxdp.DropMapName]
-	if err := tmpMap.Delete(uint32(ndev)); err != nil { //nolint
+	if err := tmpMap.Delete(uint32(ndev)); err != nil {
 		return err
 	}
 
