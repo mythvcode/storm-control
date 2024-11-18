@@ -19,7 +19,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: ${{ GO_VERSION }}
+        go-version: ${{ vars.GO_VERSION }}
     - name: Test
       run: make tests
   lint:
@@ -29,6 +29,6 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: ${{ GO_VERSION }}
+        go-version: ${{ vars.GO_VERSION }}
     - name: Lint
       run: make lint
