@@ -52,9 +52,6 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
-      - name: Build the Go app
-        run: go build -o myapp
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
