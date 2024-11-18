@@ -3,10 +3,10 @@ name: Test pipelines
 on:
   push:
     branches:
-      - '**'
+      - master
   pull_request:
     branches:
-      - '**'
+      - master
 
 jobs:
   test:
@@ -63,6 +63,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           build-args: |
             GO_VERSION=${{ vars.GO_VERSION }}
           push: false
