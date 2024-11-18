@@ -62,12 +62,12 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build docker image
         uses: docker/build-push-action@v4
         with:
           context: .
           build-args: |
-            GO_VERSION=${{ secrets.GO_VERSION }}
+            GO_VERSION=${{ vars.GO_VERSION }}
           push: false
           tags: |
             ghcr.io/${{ github.repository_owner }}/storm-control:latest
