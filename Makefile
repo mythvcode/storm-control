@@ -1,4 +1,5 @@
 LIBC_HEADERS=/usr/include/x86_64-linux-gnu
+GOLANG_CI_VERSION ?= 'v1.59.1'
 
 build:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o storm-control ./cmd/stormcontrol
@@ -29,3 +30,6 @@ clean:
 		echo "file ebpfxdp/kernel/xdp_kernel.o not empty, skip deletion";\
 	fi
 	rm -rf ./storm-control
+
+install_linter:
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin $(GOLANG_CI_VERSION)
