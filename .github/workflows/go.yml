@@ -12,19 +12,23 @@ on:
       - '**'
 
 jobs:
-
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.20'
-
-    - name: Build
-      run: go build -v ./...
-
+        go-version: $GO_VERSION
     - name: Test
-      run: go test -v ./...
+      run: make tests
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: $GO_VERSION
+    - name: Lint
+      run: make lint
