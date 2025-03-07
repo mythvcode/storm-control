@@ -12,8 +12,8 @@ Env variable                    | Yaml config equivalent         | default value
 ---                             |  ---                           |  ---                        | ---                                                                                    |
 LOG_LEVEL                       | logger:level                   | debug                       | Storm control log level                                                                |
 LOG_FILE                        | logger:file                    |                             | Log file (if not specified when stdout)                                                |
-BLOCK_ENABLED                   | watcher:block_delay            | 10                          | Time duration in seconds before the unblock process initiates, after the block action. |
-OS_AUTH_URL                     | watcher:block_enabled          | false                       | Enable block action in case of detected storm control                                  |
+BLOCK_DELAY                     | watcher:block_delay            | 10                          | Time duration in seconds before the unblock process initiates, after the block action. |
+BLOCK_ENABLED                   | watcher:block_enabled          | false                       | Enable block action in case of detected storm control                                  |
 BLOCK_THRESHOLD                 | watcher:block_threshold        | 100                         | Threshold of broadcast and multicast packets to trigger block action                   |
 STATIC_DEV_LIST                 | watcher:device_list            |                             | Static interface list if specified when device_regex is not checked                    |
 DEV_REGEX                       | watcher:device_regex           | ^tap.{8}-.{2}$              | Regexp for search interfaces to monitor                                                |
