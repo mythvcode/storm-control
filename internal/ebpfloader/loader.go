@@ -1,34 +1,36 @@
 package ebpfloader
 
 import (
+	"errors"
 	"fmt"
+	"math"
 	"sync"
 
-	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
-	"github.com/mythvcode/storm-control/ebpfxdp"
 )
 
-type (
-	CounterStat map[uint32]ebpfxdp.PacketCounter
-	DropConf    map[uint32]ebpfxdp.DropPKT
-)
-
-type Statistic struct {
-	CounterStat
-	DropConf
-}
 type EbfProgram struct {
-	Collection *ebpf.Collection
+	Collection *collection
 	lMux       sync.Mutex
 	Links      map[int]link.Link
 }
 
-func LoadCollection() (*EbfProgram, error) {
+func toUint32(interfaceIndex int) (uint32, error) {
+	if interfaceIndex < 0 {
+		return 0, fmt.Errorf("negative interface index %d", interfaceIndex)
+	}
+	if interfaceIndex > math.MaxUint32 {
+		return 0, fmt.Errorf("overflow interface uint32 interface index %d, max value %d", interfaceIndex, math.MaxUint32)
+	}
+
+	return uint32(interfaceIndex), nil
+}
+
+func New() (*EbfProgram, error) {
 	prog := &EbfProgram{
 		Links: make(map[int]link.Link),
 	}
-	col, err := ebpfxdp.LoadCollection()
+	col, err := loadCollection()
 	if err != nil {
 		return nil, err
 	}
@@ -37,10 +39,14 @@ func LoadCollection() (*EbfProgram, error) {
 	return prog, err
 }
 
-func (e *EbfProgram) AttachXDPToNetDevice(ndev int) error {
+func (e *EbfProgram) AttachXDP(ndev int) error {
+	devIndexUint32, err := toUint32(ndev)
+	if err != nil {
+		return err
+	}
 	link, err := link.AttachXDP(
 		link.XDPOptions{
-			Program:   e.Collection.Programs[ebpfxdp.ProgramName],
+			Program:   e.Collection.getProgram(),
 			Interface: ndev,
 			Flags:     link.XDPGenericMode,
 		})
@@ -48,7 +54,9 @@ func (e *EbfProgram) AttachXDPToNetDevice(ndev int) error {
 		return err
 	}
 
-	if err := e.addNetDevToMaps(ndev); err != nil {
+	if err := e.addNetDevToMaps(devIndexUint32); err != nil {
+		link.Close() //nolint
+
 		return err
 	}
 
@@ -59,34 +67,13 @@ func (e *EbfProgram) AttachXDPToNetDevice(ndev int) error {
 	return nil
 }
 
-func (e *EbfProgram) addNetDevToMaps(ndev int) error {
-	tmpMap := e.Collection.Maps[ebpfxdp.StatsMapName]
-	if err := tmpMap.Put(uint32(ndev), ebpfxdp.PacketCounter{}); err != nil {
-		return err
-	}
-	tmpMap = e.Collection.Maps[ebpfxdp.DropMapName]
-	if err := tmpMap.Put(uint32(ndev), ebpfxdp.DropPKT{}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (e *EbfProgram) removeNetDevFromMaps(ndev int) error {
-	tmpMap := e.Collection.Maps[ebpfxdp.StatsMapName]
-	if err := tmpMap.Delete(uint32(ndev)); err != nil {
-		return err
-	}
-	tmpMap = e.Collection.Maps[ebpfxdp.DropMapName]
-	if err := tmpMap.Delete(uint32(ndev)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (e *EbfProgram) DetachXDP(ndev int) error {
-	if err := e.removeNetDevFromMaps(ndev); err != nil {
+	devIndexUint32, err := toUint32(ndev)
+	if err != nil {
+		return err
+	}
+
+	if err := e.removeNetDevFromMaps(devIndexUint32); err != nil {
 		return err
 	}
 
@@ -105,7 +92,11 @@ func (e *EbfProgram) DetachXDP(ndev int) error {
 }
 
 func (e *EbfProgram) ForceDetachXDP(ndev int) {
-	e.removeNetDevFromMaps(ndev) //nolint
+	devIndexUint32, err := toUint32(ndev)
+	if err != nil {
+		return
+	}
+	e.removeNetDevFromMaps(devIndexUint32) //nolint
 	xdpLink, exist := e.Links[ndev]
 	if exist {
 		xdpLink.Close()
@@ -115,58 +106,63 @@ func (e *EbfProgram) ForceDetachXDP(ndev int) {
 	delete(e.Links, ndev)
 }
 
-func (e *EbfProgram) getStatsMapConf() (CounterStat, error) {
-	iter := e.GetStatsMap().Iterate()
-	var key uint32
-	var value ebpfxdp.PacketCounter
-	result := make(CounterStat, 10)
-	for iter.Next(&key, &value) {
-		result[key] = value
-	}
-	if err := iter.Err(); err != nil {
-		return nil, err
+func (e *EbfProgram) addNetDevToMaps(ndev uint32) error {
+	if err := e.Collection.putStatValue(ndev); err != nil {
+		return err
 	}
 
-	return result, nil
+	if err := e.Collection.putDropValue(ndev, DropPKT{}); err != nil {
+		if delErr := e.Collection.deleteStatValue(ndev); delErr != nil {
+			return errors.Join(err, delErr)
+		}
+
+		return err
+	}
+
+	return nil
 }
 
-func (e *EbfProgram) getDropMapConf() (DropConf, error) {
-	iter := e.GetDropMap().Iterate()
-	var key uint32
-	var value ebpfxdp.DropPKT
-	result := make(DropConf, 10)
-	for iter.Next(&key, &value) {
-		result[key] = value
-	}
-	if err := iter.Err(); err != nil {
-		return nil, err
+func (e *EbfProgram) removeNetDevFromMaps(ndev uint32) error {
+	if err := e.Collection.deleteStatValue(ndev); err != nil {
+		return err
 	}
 
-	return result, nil
+	if err := e.Collection.deleteDropValue(ndev); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (e *EbfProgram) GetStatistic() (*Statistic, error) {
-	result := Statistic{}
-	stats, err := e.getStatsMapConf()
+func (e *EbfProgram) GetStatistic() (Statistic, error) {
+	return e.Collection.getStatistic()
+}
+
+func (e *EbfProgram) GetDevStat(devIndex int) (PacketCounter, error) {
+	devIndexUint32, err := toUint32(devIndex)
 	if err != nil {
-		return nil, err
+		return PacketCounter{}, err
 	}
-	result.CounterStat = stats
-	dropConf, err := e.getDropMapConf()
+
+	return e.Collection.lookupStatValue(devIndexUint32)
+}
+
+func (e *EbfProgram) GetDevDropCfg(devIndex int) (DropPKT, error) {
+	devIndexUint32, err := toUint32(devIndex)
 	if err != nil {
-		return nil, err
+		return DropPKT{}, err
 	}
-	result.DropConf = dropConf
 
-	return &result, nil
+	return e.Collection.lookupDropValue(devIndexUint32)
 }
 
-func (e *EbfProgram) GetStatsMap() *ebpf.Map {
-	return e.Collection.Maps[ebpfxdp.StatsMapName]
-}
+func (e *EbfProgram) UpdateDevDropCfg(devIndex int, cfg DropPKT) error {
+	devIndexUint32, err := toUint32(devIndex)
+	if err != nil {
+		return err
+	}
 
-func (e *EbfProgram) GetDropMap() *ebpf.Map {
-	return e.Collection.Maps[ebpfxdp.DropMapName]
+	return e.Collection.updateDropValue(devIndexUint32, cfg)
 }
 
 func (e *EbfProgram) Close() {

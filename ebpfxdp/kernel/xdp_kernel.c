@@ -7,7 +7,7 @@
 #include "xdp_kernel.h"
 
 struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(type, BPF_MAP_TYPE_PERCPU_HASH);
     __type(key, __u32);
     __type(value, struct packet_counter);
     __uint(max_entries, CONFIG_MAP_MAX_ELEMENT);
@@ -55,23 +55,23 @@ static __always_inline __be16 get_h_proto(struct ethhdr *eth, void *data_end) {
 static __always_inline int get_xdp_action(traffic_desc *tr_desc, __u32 ifindex, p_type pt){
     drop_pkt *drop_desc = bpf_map_lookup_elem(&drop_intf, &ifindex);
     if (!drop_desc){
-        __sync_fetch_and_add(&(tr_desc->passed), 1);
+        tr_desc->passed++;
         return XDP_PASS;
     }
     if (drop_desc->broadcast && pt == Broadcast){
-        __sync_fetch_and_add(&(tr_desc->dropped), 1);
+        tr_desc->dropped++;
         return XDP_DROP;
     } else if (drop_desc->ipv4_mcast && pt == IPv4MCast){
-        __sync_fetch_and_add(&(tr_desc->dropped), 1);
+        tr_desc->dropped++;
         return XDP_DROP;
     } else if (drop_desc->ipv6_mcast && pt == IPv6MCast){
-        __sync_fetch_and_add(&(tr_desc->dropped), 1);
+        tr_desc->dropped++;
         return XDP_DROP;
     } else if (drop_desc->other_mcast && pt == GenericMCast){
-        __sync_fetch_and_add(&(tr_desc->dropped), 1);
+        tr_desc->dropped++;
         return XDP_DROP;
     }
-    __sync_fetch_and_add(&(tr_desc->passed), 1);
+    tr_desc->passed++;
     return XDP_PASS;
 }
 

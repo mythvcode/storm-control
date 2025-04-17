@@ -7,8 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/cilium/ebpf"
-	"github.com/mythvcode/storm-control/ebpfxdp"
+	"github.com/mythvcode/storm-control/internal/ebpfloader"
 	"github.com/mythvcode/storm-control/internal/logger"
 )
 
@@ -25,22 +24,15 @@ const (
 	blockAction   = 2
 )
 
-type EBPFMap interface {
-	Lookup(key, valueOut interface{}) error
-	Update(key, value any, flags ebpf.MapUpdateFlags) error
-}
-
 type netDevWatcher struct {
-	netDevIndex      uint32
+	netDevIndex      int
 	netDevName       string
 	blockThreshold   uint64
 	unblockThreshold uint64
 	dropDelay        time.Duration
 	stopChan         chan struct{}
-	statsMap         EBPFMap
-
-	dropMapMux sync.Mutex
-	dropMap    EBPFMap
+	ebpfProg         eBPFProg
+	dropMapMux       sync.Mutex
 
 	dropState dropStateConfig
 	log       *logger.Logger
@@ -83,17 +75,16 @@ func newNetDevWatcher(
 	netDevName string,
 	blockThreshold uint64,
 	dropDelay time.Duration,
-	statsMap, dropMap EBPFMap,
+	ebpfProg eBPFProg,
 ) *netDevWatcher {
 	return &netDevWatcher{
-		netDevIndex:      uint32(netDev),
+		netDevIndex:      netDev,
 		netDevName:       netDevName,
 		blockThreshold:   blockThreshold,
 		unblockThreshold: blockThreshold * 3,
-		statsMap:         statsMap,
-		dropMap:          dropMap,
 		dropDelay:        dropDelay,
 		stopChan:         make(chan struct{}),
+		ebpfProg:         ebpfProg,
 		log:              logger.GetLogger().With(slog.String(logger.Component, "NetDevWatcher")),
 	}
 }
@@ -103,20 +94,15 @@ func (n *netDevWatcher) stop() {
 }
 
 func (n *netDevWatcher) index() int {
-	return int(n.netDevIndex)
+	return n.netDevIndex
 }
 
 func (n *netDevWatcher) devInfo() string {
 	return fmt.Sprintf("%s (%d)", n.netDevName, n.netDevIndex)
 }
 
-func (n *netDevWatcher) getStats() (*ebpfxdp.PacketCounter, error) {
-	result := new(ebpfxdp.PacketCounter)
-	if err := n.statsMap.Lookup(n.netDevIndex, result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+func (n *netDevWatcher) getStats() (ebpfloader.PacketCounter, error) {
+	return n.ebpfProg.GetDevStat(n.index())
 }
 
 func (n *netDevWatcher) startUnblockWatcher(update updateDropConfig) {
@@ -174,7 +160,7 @@ func (n *netDevWatcher) releaseBlockState(trafType int) {
 	}
 }
 
-func (n *netDevWatcher) checkAndUnblock(prevStats, curState *ebpfxdp.PacketCounter, trafType int) (bool, error) { //nolint
+func (n *netDevWatcher) checkAndUnblock(prevStats, curState *ebpfloader.PacketCounter, trafType int) (bool, error) { //nolint
 	switch trafType {
 	case broadcastType:
 		if (curState.Broadcast.Dropped - prevStats.Broadcast.Dropped) < n.unblockThreshold {
@@ -254,7 +240,7 @@ func (n *netDevWatcher) watchUnblock(trafType int) {
 
 				continue
 			}
-			ok, err := n.checkAndUnblock(prevStats, stats, trafType)
+			ok, err := n.checkAndUnblock(&prevStats, &stats, trafType)
 			if err != nil {
 				n.log.Errorf("Error check unblock status for interface %s", n.devInfo())
 			}
@@ -272,8 +258,8 @@ func (n *netDevWatcher) updateDropMap(update updateDropConfig) error {
 	}
 	n.dropMapMux.Lock()
 	defer n.dropMapMux.Unlock()
-	var result ebpfxdp.DropPKT
-	if err := n.dropMap.Lookup(n.netDevIndex, &result); err != nil {
+	result, err := n.ebpfProg.GetDevDropCfg(n.netDevIndex)
+	if err != nil {
 		return err
 	}
 
@@ -290,13 +276,13 @@ func (n *netDevWatcher) updateDropMap(update updateDropConfig) error {
 		result.Multicast = getEBPFAction(update.other)
 	}
 
-	return n.dropMap.Update(n.netDevIndex, result, ebpf.UpdateExist)
+	return n.ebpfProg.UpdateDevDropCfg(n.netDevIndex, result)
 }
 
-func (n *netDevWatcher) getCalculateStatsFuc() func(statStruct ebpfxdp.PacketCounter) updateDropConfig {
-	var stats ebpfxdp.PacketCounter
+func (n *netDevWatcher) getCalculateStatsFuc() func(statStruct ebpfloader.PacketCounter) updateDropConfig {
+	var stats ebpfloader.PacketCounter
 
-	return func(curStats ebpfxdp.PacketCounter) updateDropConfig {
+	return func(curStats ebpfloader.PacketCounter) updateDropConfig {
 		blockStruct := updateDropConfig{}
 		if (curStats.Broadcast.Passed - stats.Broadcast.Passed) > n.blockThreshold {
 			n.log.Debugf("Block broadcast traffic %s", n.devInfo())
@@ -339,11 +325,11 @@ func (n *netDevWatcher) startWatching() {
 		case <-ticker.C:
 			stats, err := n.getStats()
 			if err != nil {
-				n.log.Errorf("Stop watching interface %s %s", n.devInfo(), err.Error())
+				n.log.Errorf("Error get statistic for interface %s %s", n.devInfo(), err.Error())
 
 				continue
 			}
-			dropConf := calculateState(*stats)
+			dropConf := calculateState(stats)
 			if !dropConf.isEmpty() {
 				if err := n.updateDropMap(dropConf); err != nil {
 					n.log.Errorf("Error block traffic on interface %s: caused %s", n.devInfo(), err.Error())

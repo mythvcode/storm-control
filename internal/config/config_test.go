@@ -50,7 +50,7 @@ func testDefaults(t *testing.T, cfg StormControlConfig) {
 	require.Equal(t, "/metrics", cfg.Exporter.TelemetryPath)
 }
 
-func setEnvVars(t *testing.T) func() {
+func setEnvVars(t *testing.T) {
 	t.Helper()
 	envVars := []struct {
 		envName string
@@ -114,14 +114,14 @@ func setEnvVars(t *testing.T) func() {
 		},
 	}
 	for _, env := range envVars {
-		require.NoError(t, os.Setenv(env.envName, env.value))
+		t.Setenv(env.envName, env.value)
 	}
 
-	return func() {
+	t.Cleanup(func() {
 		for _, env := range envVars {
 			require.NoError(t, os.Unsetenv(env.envName))
 		}
-	}
+	})
 }
 
 func TestCheckDefaults(t *testing.T) {
@@ -135,8 +135,7 @@ func TestLoadFromEnv(t *testing.T) {
 	require.NoError(t, err)
 	testDefaults(t, cfg)
 
-	unsetEnv := setEnvVars(t)
-	defer unsetEnv()
+	setEnvVars(t)
 	cfg, err = ReadConfig("")
 	require.NoError(t, err)
 
