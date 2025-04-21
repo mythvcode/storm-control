@@ -3,7 +3,6 @@ package exporter
 import (
 	"testing"
 
-	"github.com/mythvcode/storm-control/ebpfxdp"
 	"github.com/mythvcode/storm-control/internal/ebpfloader"
 )
 
@@ -75,44 +74,44 @@ storm_control_traffic_blocked_status{interface_index="5653",interface_name="tap7
 storm_control_traffic_blocked_status{interface_index="5653",interface_name="tap72cdd785-3a",traffic_type="other_multicast"} 1
 `
 
-func makeZeroTestValues(t *testing.T) (string, *ebpfloader.Statistic) {
+func makeZeroTestValues(t *testing.T) (string, ebpfloader.Statistic) {
 	t.Helper()
 	result := ebpfloader.Statistic{}
 	result.CounterStat = ebpfloader.CounterStat{
-		5653: ebpfxdp.PacketCounter{},
+		5653: ebpfloader.PacketCounter{},
 	}
 	result.DropConf = ebpfloader.DropConf{
-		5653: ebpfxdp.DropPKT{},
+		5653: ebpfloader.DropPKT{},
 	}
 
-	return collectorTestZeroValues, &result
+	return collectorTestZeroValues, result
 }
 
-func makeTestValues(t *testing.T) (string, *ebpfloader.Statistic) {
+func makeTestValues(t *testing.T) (string, ebpfloader.Statistic) {
 	t.Helper()
 	result := ebpfloader.Statistic{}
 	result.CounterStat = ebpfloader.CounterStat{
-		5653: ebpfxdp.PacketCounter{
-			Broadcast: ebpfxdp.TrafInfo{
+		5653: ebpfloader.PacketCounter{
+			Broadcast: ebpfloader.TrafInfo{
 				Passed:  100,
 				Dropped: 50,
 			},
-			IPv4MCast: ebpfxdp.TrafInfo{
+			IPv4MCast: ebpfloader.TrafInfo{
 				Passed:  10,
 				Dropped: 1,
 			},
-			IPv6MCast: ebpfxdp.TrafInfo{
+			IPv6MCast: ebpfloader.TrafInfo{
 				Passed:  60,
 				Dropped: 61,
 			},
-			OtherMcast: ebpfxdp.TrafInfo{
+			OtherMcast: ebpfloader.TrafInfo{
 				Passed:  55,
 				Dropped: 53,
 			},
 		},
 	}
 	result.DropConf = ebpfloader.DropConf{
-		5653: ebpfxdp.DropPKT{
+		5653: ebpfloader.DropPKT{
 			Broadcast: 1,
 			IPv4MCast: 0,
 			IPv6MCast: 1,
@@ -120,5 +119,5 @@ func makeTestValues(t *testing.T) (string, *ebpfloader.Statistic) {
 		},
 	}
 
-	return collectorTestValues, &result
+	return collectorTestValues, result
 }

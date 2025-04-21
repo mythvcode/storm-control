@@ -23,7 +23,7 @@ type APIServer struct {
 }
 
 type StatsLoader interface {
-	GetStatistic() (*ebpfloader.Statistic, error)
+	GetStatistic() (ebpfloader.Statistic, error)
 }
 
 func New(cfg config.Exporter, statsLoader StatsLoader) (*APIServer, error) {

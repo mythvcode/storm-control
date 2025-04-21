@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/cilium/ebpf"
 	"github.com/mythvcode/storm-control/internal/config"
 	"github.com/mythvcode/storm-control/internal/logger"
 	"github.com/mythvcode/storm-control/internal/watcher/mocks"
@@ -125,25 +124,22 @@ func TestFindDevices(t *testing.T) {
 
 func TestAttachProgram(t *testing.T) {
 	watcher, ebpfMock := makeTestWatcher(t)
-	ebpfMock.EXPECT().AttachXDPToNetDevice(1).Return(nil)
-	ebpfMock.EXPECT().AttachXDPToNetDevice(123).Return(nil)
-	ebpfMock.EXPECT().AttachXDPToNetDevice(5).Return(nil)
-	ebpfMock.EXPECT().GetStatsMap().Return(&ebpf.Map{})
-	ebpfMock.EXPECT().GetDropMap().Return(&ebpf.Map{})
+	ebpfMock.EXPECT().AttachXDP(1).Return(nil)
+	ebpfMock.EXPECT().AttachXDP(123).Return(nil)
+	ebpfMock.EXPECT().AttachXDP(5).Return(nil)
 	watcher.findAndAttachNetDev()
-	ebpfMock.AssertNotCalled(t, "AttachXDPToNetDevice", 100)
-	ebpfMock.AssertNumberOfCalls(t, "AttachXDPToNetDevice", 3)
-	ebpfMock.AssertNumberOfCalls(t, "GetStatsMap", 3)
-	ebpfMock.AssertNumberOfCalls(t, "GetDropMap", 3)
+	ebpfMock.AssertNotCalled(t, "AttachXDP", 100)
+	ebpfMock.AssertCalled(t, "AttachXDP", 1)
+	ebpfMock.AssertCalled(t, "AttachXDP", 123)
+	ebpfMock.AssertCalled(t, "AttachXDP", 5)
+	ebpfMock.AssertNumberOfCalls(t, "AttachXDP", 3)
 }
 
 func TestDetachProg(t *testing.T) {
 	watcher, ebpfMock := makeTestWatcher(t)
-	ebpfMock.EXPECT().AttachXDPToNetDevice(1).Return(nil)
-	ebpfMock.EXPECT().AttachXDPToNetDevice(123).Return(nil)
-	ebpfMock.EXPECT().AttachXDPToNetDevice(5).Return(nil)
-	ebpfMock.EXPECT().GetStatsMap().Return(&ebpf.Map{})
-	ebpfMock.EXPECT().GetDropMap().Return(&ebpf.Map{})
+	ebpfMock.EXPECT().AttachXDP(1).Return(nil)
+	ebpfMock.EXPECT().AttachXDP(123).Return(nil)
+	ebpfMock.EXPECT().AttachXDP(5).Return(nil)
 	watcher.findAndAttachNetDev()
 	listInterfaces = func() ([]net.Interface, error) {
 		return []net.Interface{

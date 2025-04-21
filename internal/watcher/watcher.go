@@ -6,16 +6,17 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/cilium/ebpf"
 	"github.com/mythvcode/storm-control/internal/config"
+	"github.com/mythvcode/storm-control/internal/ebpfloader"
 	"github.com/mythvcode/storm-control/internal/logger"
 )
 
 type eBPFProg interface {
-	AttachXDPToNetDevice(ndev int) error
-	ForceDetachXDP(ndev int)
-	GetStatsMap() *ebpf.Map
-	GetDropMap() *ebpf.Map
+	AttachXDP(devIndex int) error
+	ForceDetachXDP(devIndex int)
+	GetDevStat(devIndex int) (ebpfloader.PacketCounter, error)
+	GetDevDropCfg(devIndex int) (ebpfloader.DropPKT, error)
+	UpdateDevDropCfg(devIndex int, cfg ebpfloader.DropPKT) error
 	Close()
 }
 type Watcher struct {
@@ -61,8 +62,7 @@ func (w *Watcher) makeNetDevWatcher(netDev int, netDevName string) *netDevWatche
 		netDevName,
 		w.config.BlockThreshold,
 		time.Duration(w.config.BlockDelay)*time.Second,
-		w.ebpfProg.GetStatsMap(),
-		w.ebpfProg.GetDropMap(),
+		w.ebpfProg,
 	)
 }
 
@@ -108,7 +108,7 @@ func (w *Watcher) findAndAttachNetDev() {
 	for _, nDev := range netDevices {
 		if _, ok := w.devWatcherMap[nDev.Index]; !ok {
 			w.log.Infof("Attach program to %s (%d)", nDev.Name, nDev.Index)
-			if err := w.ebpfProg.AttachXDPToNetDevice(nDev.Index); err != nil {
+			if err := w.ebpfProg.AttachXDP(nDev.Index); err != nil {
 				w.log.Errorf("Error attach program to device %d %s %s", nDev.Index, nDev.Name, err.Error())
 
 				continue

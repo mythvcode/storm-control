@@ -5,7 +5,6 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/mythvcode/storm-control/ebpfxdp"
 	"github.com/mythvcode/storm-control/internal/ebpfloader"
 	"github.com/mythvcode/storm-control/internal/logger"
 	"github.com/prometheus/client_golang/prometheus"
@@ -152,7 +151,7 @@ func (s *StormControlCollector) Describe(ch chan<- *prometheus.Desc) {
 	}
 }
 
-func (s *StormControlCollector) calcPassedStatsForNetDev(stats *ebpfxdp.PacketCounter, netDev *net.Interface) {
+func (s *StormControlCollector) calcPassedStatsForNetDev(stats *ebpfloader.PacketCounter, netDev *net.Interface) {
 	s.BroadcastPassedPackets.With(
 		prometheus.Labels{
 			interfaceIndexLabel: strconv.Itoa(netDev.Index),
@@ -192,7 +191,7 @@ func (s *StormControlCollector) calcPassedStatsForNetDev(stats *ebpfxdp.PacketCo
 	).Add(float64(stats.IPv4MCast.Passed + stats.IPv6MCast.Passed + stats.OtherMcast.Passed))
 }
 
-func (s *StormControlCollector) calcDroppedStatsForNetDev(stats *ebpfxdp.PacketCounter, netDev *net.Interface) {
+func (s *StormControlCollector) calcDroppedStatsForNetDev(stats *ebpfloader.PacketCounter, netDev *net.Interface) {
 	s.BroadcastDroppedPackets.With(
 		prometheus.Labels{
 			interfaceIndexLabel: strconv.Itoa(netDev.Index),
@@ -232,7 +231,7 @@ func (s *StormControlCollector) calcDroppedStatsForNetDev(stats *ebpfxdp.PacketC
 	).Add(float64(stats.IPv4MCast.Dropped + stats.IPv6MCast.Dropped + stats.OtherMcast.Dropped))
 }
 
-func (s *StormControlCollector) collectStats(stats *ebpfloader.Statistic, netDevList []net.Interface) {
+func (s *StormControlCollector) collectStats(stats ebpfloader.Statistic, netDevList []net.Interface) {
 	for index, stats := range stats.CounterStat {
 		if netDev := findInterface(netDevList, index); netDev != nil {
 			s.calcPassedStatsForNetDev(&stats, netDev)
@@ -241,7 +240,7 @@ func (s *StormControlCollector) collectStats(stats *ebpfloader.Statistic, netDev
 	}
 }
 
-func (s *StormControlCollector) collectDropConfig(stats *ebpfloader.Statistic, netDevList []net.Interface) {
+func (s *StormControlCollector) collectDropConfig(stats ebpfloader.Statistic, netDevList []net.Interface) {
 	for index, stats := range stats.DropConf {
 		if netDev := findInterface(netDevList, index); netDev != nil {
 			s.TrafficBlockedByInterface.With(
@@ -279,7 +278,7 @@ func (s *StormControlCollector) collectDropConfig(stats *ebpfloader.Statistic, n
 	}
 }
 
-func (s *StormControlCollector) collectAttachedInterfaces(stats *ebpfloader.Statistic, netDevList []net.Interface) {
+func (s *StormControlCollector) collectAttachedInterfaces(stats ebpfloader.Statistic, netDevList []net.Interface) {
 	for index := range stats.CounterStat {
 		if netDev := findInterface(netDevList, index); netDev != nil {
 			s.AttachedLinks.With(

@@ -4,8 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/cilium/ebpf"
-	"github.com/mythvcode/storm-control/ebpfxdp"
+	"github.com/mythvcode/storm-control/internal/ebpfloader"
 	"github.com/mythvcode/storm-control/internal/watcher/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -14,7 +13,7 @@ import (
 func createWatcher(t *testing.T) *netDevWatcher {
 	t.Helper()
 
-	return newNetDevWatcher(1, "test_name", 10, 0, &ebpf.Map{}, &ebpf.Map{})
+	return newNetDevWatcher(1, "test_name", 10, 0, mocks.NewMockeBPFProg(t))
 }
 
 func TestAcquireBlockState(t *testing.T) {
@@ -82,27 +81,26 @@ func TestReleaseBlockState(t *testing.T) {
 }
 
 func TestDevInfo(t *testing.T) {
-	statsMock := mocks.NewMockEBPFMap(t)
-	dropMock := mocks.NewMockEBPFMap(t)
-	watchr := newNetDevWatcher(1, "test_name", 10, 0, statsMock, dropMock)
+	ebpfProg := mocks.NewMockeBPFProg(t)
+
+	watchr := newNetDevWatcher(1, "test_name", 10, 0, ebpfProg)
 	res := watchr.devInfo()
 	require.Equal(t, "test_name (1)", res)
 }
 
-func TestUpdateDropMap(t *testing.T) {
-	statsMock := mocks.NewMockEBPFMap(t)
-	dropMock := mocks.NewMockEBPFMap(t)
-	dropMock.EXPECT().Lookup(mock.Anything, mock.Anything).Return(nil)
-	dropMock.EXPECT().Update(uint32(1), ebpfxdp.DropPKT{Broadcast: 1}, ebpf.UpdateExist).Return(nil)
-	dropMock.EXPECT().Update(uint32(1), ebpfxdp.DropPKT{IPv4MCast: 1}, ebpf.UpdateExist).Return(nil)
-	dropMock.EXPECT().Update(uint32(1), ebpfxdp.DropPKT{IPv6MCast: 1, Multicast: 1}, ebpf.UpdateExist).Return(nil)
-	watchr := newNetDevWatcher(1, "test_name", 10, 0, statsMock, dropMock)
+func TestUpdateDropConf(t *testing.T) {
+	ebpfProg := mocks.NewMockeBPFProg(t)
+	ebpfProg.EXPECT().GetDevDropCfg(mock.Anything).Return(ebpfloader.DropPKT{}, nil)
+	ebpfProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{Broadcast: 1}).Return(nil)
+	ebpfProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{IPv4MCast: 1}).Return(nil)
+	ebpfProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{IPv6MCast: 1, Multicast: 1}).Return(nil)
+	watchr := newNetDevWatcher(1, "test_name", 10, 0, ebpfProg)
 	require.NoError(t, watchr.updateDropMap(updateDropConfig{br: blockAction}))
 	require.NoError(t, watchr.updateDropMap(updateDropConfig{ipv4: blockAction}))
 	require.NoError(t, watchr.updateDropMap(updateDropConfig{ipv6: blockAction, other: blockAction}))
 	// unblock
-	dropMock.EXPECT().Update(uint32(1), ebpfxdp.DropPKT{Broadcast: 0, IPv4MCast: 0}, ebpf.UpdateExist).Return(nil)
-	dropMock.EXPECT().Update(uint32(1), ebpfxdp.DropPKT{IPv6MCast: 1, Multicast: 0}, ebpf.UpdateExist).Return(nil)
+	ebpfProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{Broadcast: 0, IPv4MCast: 0}).Return(nil)
+	ebpfProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{IPv6MCast: 1, Multicast: 0}).Return(nil)
 	require.NoError(t, watchr.updateDropMap(updateDropConfig{br: unblockAction, ipv4: unblockAction}))
 	require.NoError(t, watchr.updateDropMap(updateDropConfig{ipv6: blockAction, other: unblockAction}))
 }
@@ -110,100 +108,98 @@ func TestUpdateDropMap(t *testing.T) {
 func TestCalculateStats(t *testing.T) {
 	watcher := createWatcher(t)
 	calcFunc := watcher.getCalculateStatsFuc()
-	blockConf := calcFunc(ebpfxdp.PacketCounter{Broadcast: ebpfxdp.TrafInfo{Passed: 100}})
+	blockConf := calcFunc(ebpfloader.PacketCounter{Broadcast: ebpfloader.TrafInfo{Passed: 100}})
 	require.Equal(t, updateDropConfig{br: blockAction}, blockConf)
-	blockConf = calcFunc(ebpfxdp.PacketCounter{Broadcast: ebpfxdp.TrafInfo{Passed: 200}, IPv4MCast: ebpfxdp.TrafInfo{Passed: 100}})
+	blockConf = calcFunc(ebpfloader.PacketCounter{Broadcast: ebpfloader.TrafInfo{Passed: 200}, IPv4MCast: ebpfloader.TrafInfo{Passed: 100}})
 	require.Equal(t, updateDropConfig{br: blockAction, ipv4: blockAction}, blockConf)
-	blockConf = calcFunc(ebpfxdp.PacketCounter{Broadcast: ebpfxdp.TrafInfo{Passed: 200}, IPv4MCast: ebpfxdp.TrafInfo{Passed: 100}})
+	blockConf = calcFunc(ebpfloader.PacketCounter{Broadcast: ebpfloader.TrafInfo{Passed: 200}, IPv4MCast: ebpfloader.TrafInfo{Passed: 100}})
 	require.Equal(t, updateDropConfig{}, blockConf)
 }
 
 func TestCheckUnblockError(t *testing.T) {
-	statsMock := mocks.NewMockEBPFMap(t)
-	dropMock := mocks.NewMockEBPFMap(t)
-	watcher := newNetDevWatcher(1, "test_name", 10, 0, statsMock, dropMock)
+	ebpfProg := mocks.NewMockeBPFProg(t)
+	watcher := newNetDevWatcher(1, "test_name", 10, 0, ebpfProg)
 	unblock, err := watcher.checkAndUnblock(
-		&ebpfxdp.PacketCounter{Broadcast: ebpfxdp.TrafInfo{Dropped: 100}},
-		&ebpfxdp.PacketCounter{Broadcast: ebpfxdp.TrafInfo{Dropped: 200}},
+		&ebpfloader.PacketCounter{Broadcast: ebpfloader.TrafInfo{Dropped: 100}},
+		&ebpfloader.PacketCounter{Broadcast: ebpfloader.TrafInfo{Dropped: 200}},
 		broadcastType,
 	)
 	require.NoError(t, err)
 	require.False(t, unblock)
-	dropMock.EXPECT().Lookup(mock.Anything, mock.Anything).Return(nil)
-	dropMock.EXPECT().Update(uint32(1), ebpfxdp.DropPKT{Broadcast: 0}, ebpf.UpdateExist).Return(errors.New("error update map"))
+	ebpfProg.EXPECT().GetDevDropCfg(1).Return(ebpfloader.DropPKT{}, nil)
+	ebpfProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{Broadcast: 0}).Return(errors.New("error map drop config"))
 	unblock, err = watcher.checkAndUnblock(
-		&ebpfxdp.PacketCounter{Broadcast: ebpfxdp.TrafInfo{Dropped: 100}},
-		&ebpfxdp.PacketCounter{Broadcast: ebpfxdp.TrafInfo{Dropped: 101}},
+		&ebpfloader.PacketCounter{Broadcast: ebpfloader.TrafInfo{Dropped: 100}},
+		&ebpfloader.PacketCounter{Broadcast: ebpfloader.TrafInfo{Dropped: 101}},
 		broadcastType,
 	)
 	require.False(t, unblock)
 	require.Error(t, err)
-	require.Equal(t, "error update map", err.Error())
+	require.Equal(t, "error map drop config", err.Error())
 }
 
 func TestCheckUnblock(t *testing.T) {
 	tCases := []struct {
-		initMock     func(dropMock *mocks.MockEBPFMap)
+		initMock     func(dropMock *mocks.MockeBPFProg)
 		unblockCheck func(watcher *netDevWatcher) (bool, error)
 	}{
 		{
-			initMock: func(dropMock *mocks.MockEBPFMap) {
-				dropMock.EXPECT().Lookup(mock.Anything, mock.Anything).Return(nil)
-				dropMock.EXPECT().Update(uint32(1), ebpfxdp.DropPKT{Broadcast: 0}, ebpf.UpdateExist).Return(nil)
+			initMock: func(eBPFProg *mocks.MockeBPFProg) {
+				eBPFProg.EXPECT().GetDevDropCfg(1).Return(ebpfloader.DropPKT{}, nil)
+				eBPFProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{Broadcast: 0}).Return(nil)
 			},
 			unblockCheck: func(watcher *netDevWatcher) (bool, error) {
 				return watcher.checkAndUnblock(
-					&ebpfxdp.PacketCounter{Broadcast: ebpfxdp.TrafInfo{Dropped: 100}},
-					&ebpfxdp.PacketCounter{Broadcast: ebpfxdp.TrafInfo{Dropped: 101}},
+					&ebpfloader.PacketCounter{Broadcast: ebpfloader.TrafInfo{Dropped: 100}},
+					&ebpfloader.PacketCounter{Broadcast: ebpfloader.TrafInfo{Dropped: 101}},
 					broadcastType,
 				)
 			},
 		},
 		{
-			initMock: func(dropMock *mocks.MockEBPFMap) {
-				dropMock.EXPECT().Lookup(mock.Anything, mock.Anything).Return(nil)
-				dropMock.EXPECT().Update(uint32(1), ebpfxdp.DropPKT{IPv4MCast: 0}, ebpf.UpdateExist).Return(nil)
+			initMock: func(eBPFProg *mocks.MockeBPFProg) {
+				eBPFProg.EXPECT().GetDevDropCfg(1).Return(ebpfloader.DropPKT{}, nil)
+				eBPFProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{IPv4MCast: 0}).Return(nil)
 			},
 			unblockCheck: func(watcher *netDevWatcher) (bool, error) {
 				return watcher.checkAndUnblock(
-					&ebpfxdp.PacketCounter{IPv4MCast: ebpfxdp.TrafInfo{Dropped: 100}},
-					&ebpfxdp.PacketCounter{IPv4MCast: ebpfxdp.TrafInfo{Dropped: 101}},
+					&ebpfloader.PacketCounter{IPv4MCast: ebpfloader.TrafInfo{Dropped: 100}},
+					&ebpfloader.PacketCounter{IPv4MCast: ebpfloader.TrafInfo{Dropped: 101}},
 					ipv4McastType,
 				)
 			},
 		},
 		{
-			initMock: func(dropMock *mocks.MockEBPFMap) {
-				dropMock.EXPECT().Lookup(mock.Anything, mock.Anything).Return(nil)
-				dropMock.EXPECT().Update(uint32(1), ebpfxdp.DropPKT{IPv6MCast: 0}, ebpf.UpdateExist).Return(nil)
+			initMock: func(eBPFProg *mocks.MockeBPFProg) {
+				eBPFProg.EXPECT().GetDevDropCfg(1).Return(ebpfloader.DropPKT{}, nil)
+				eBPFProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{IPv6MCast: 0}).Return(nil)
 			},
 			unblockCheck: func(watcher *netDevWatcher) (bool, error) {
 				return watcher.checkAndUnblock(
-					&ebpfxdp.PacketCounter{IPv6MCast: ebpfxdp.TrafInfo{Dropped: 100}},
-					&ebpfxdp.PacketCounter{IPv6MCast: ebpfxdp.TrafInfo{Dropped: 101}},
+					&ebpfloader.PacketCounter{IPv6MCast: ebpfloader.TrafInfo{Dropped: 100}},
+					&ebpfloader.PacketCounter{IPv6MCast: ebpfloader.TrafInfo{Dropped: 101}},
 					ipv6McastType,
 				)
 			},
 		},
 		{
-			initMock: func(dropMock *mocks.MockEBPFMap) {
-				dropMock.EXPECT().Lookup(mock.Anything, mock.Anything).Return(nil)
-				dropMock.EXPECT().Update(uint32(1), ebpfxdp.DropPKT{Multicast: 0}, ebpf.UpdateExist).Return(nil)
+			initMock: func(eBPFProg *mocks.MockeBPFProg) {
+				eBPFProg.EXPECT().GetDevDropCfg(1).Return(ebpfloader.DropPKT{}, nil)
+				eBPFProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{Multicast: 0}).Return(nil)
 			},
 			unblockCheck: func(watcher *netDevWatcher) (bool, error) {
 				return watcher.checkAndUnblock(
-					&ebpfxdp.PacketCounter{OtherMcast: ebpfxdp.TrafInfo{Dropped: 100}},
-					&ebpfxdp.PacketCounter{OtherMcast: ebpfxdp.TrafInfo{Dropped: 101}},
+					&ebpfloader.PacketCounter{OtherMcast: ebpfloader.TrafInfo{Dropped: 100}},
+					&ebpfloader.PacketCounter{OtherMcast: ebpfloader.TrafInfo{Dropped: 101}},
 					otherType,
 				)
 			},
 		},
 	}
 	for _, tCase := range tCases {
-		statsMock := mocks.NewMockEBPFMap(t)
-		dropMock := mocks.NewMockEBPFMap(t)
-		watcher := newNetDevWatcher(1, "test_name", 10, 0, statsMock, dropMock)
-		tCase.initMock(dropMock)
+		ebpfProg := mocks.NewMockeBPFProg(t)
+		watcher := newNetDevWatcher(1, "test_name", 10, 0, ebpfProg)
+		tCase.initMock(ebpfProg)
 		unblocked, err := tCase.unblockCheck(watcher)
 		require.NoError(t, err)
 		require.True(t, unblocked)

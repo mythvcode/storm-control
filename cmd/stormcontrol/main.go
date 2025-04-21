@@ -39,7 +39,7 @@ func main() {
 		logger.Default().Errorf("Error init logger: %s", err.Error())
 		os.Exit(1)
 	}
-	eBPFProg, err := ebpfloader.LoadCollection()
+	eBPFProg, err := ebpfloader.New()
 	if err != nil {
 		logger.GetLogger().Errorf("Error load eBPF program %s", err.Error())
 		os.Exit(1)
