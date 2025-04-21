@@ -89,7 +89,7 @@ func (c *collection) getProgram() *ebpf.Program {
 func (c *collection) getStatsMapValues() (CounterStat, error) {
 	iter := c.getStatsMap().Iterate()
 	var key uint32
-	perCPUValue := make([]PacketCounter, 0)
+	perCPUValue := make([]PacketCounter, 0, cpuCount())
 	result := make(CounterStat, cpuCount())
 	for iter.Next(&key, &perCPUValue) {
 		result[key] = mergeStat(perCPUValue)
@@ -97,6 +97,7 @@ func (c *collection) getStatsMapValues() (CounterStat, error) {
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
+	perCPUValue = make([]PacketCounter, 0, cpuCount())
 
 	return result, nil
 }
