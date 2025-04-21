@@ -55,7 +55,7 @@ func (e *EbfProgram) AttachXDP(ndev int) error {
 	}
 
 	if err := e.addNetDevToMaps(devIndexUint32); err != nil {
-		link.Close() //nolint
+		link.Close()
 
 		return err
 	}
