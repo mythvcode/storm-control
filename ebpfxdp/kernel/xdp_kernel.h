@@ -1,5 +1,4 @@
 #include <linux/if_ether.h>
-#include <stdbool.h>
 
 #define CONFIG_MAP_MAX_ELEMENT 10000
 
@@ -20,12 +19,12 @@ typedef struct {
     __u64 dropped;
 } traffic_desc;
 
-struct packet_counter {
+typedef struct  {
     traffic_desc  broadcast;
     traffic_desc  ipv4_mcast;
     traffic_desc  ipv6_mcast;
     traffic_desc  other_mcast;
-};
+} packet_counter;
 
 typedef struct {
     __u8 broadcast;
@@ -40,32 +39,19 @@ struct vlan_hdr {
     __be16  h_vlan_encapsulated_proto;
 };
 
-bool compare_mac_prefix(const unsigned char compare[],
-                        unsigned char mac_address[ETH_ALEN],
-                        unsigned int len) {
-        
-    for (int i = 0; i < len; i++) {
-        if (compare[i] != mac_address[i]){
-            return false;
-        }
-    }
-    return true;
-}
-
-bool is_ipv4_mcast(unsigned char mac_address[ETH_ALEN]){
-    return compare_mac_prefix(IPV4_MAC_PREFIX, mac_address, 3);
+int is_ipv4_mcast(const unsigned char mac_address[ETH_ALEN]){
+    return !__builtin_memcmp(IPV4_MAC_PREFIX, mac_address, 3);
 }
 
 
-bool is_ipv6_mcast(unsigned char mac_address[ETH_ALEN]){
-    return compare_mac_prefix(IPV6_MAC_PREFIX, mac_address, 2);
+int is_ipv6_mcast(const unsigned char mac_address[ETH_ALEN]){
+    return !__builtin_memcmp(IPV6_MAC_PREFIX, mac_address, 2);
 }
 
-bool is_other_mcast(unsigned char mac_address[ETH_ALEN]){
-    const char mask = 0x01;
-    return (mac_address[0] & mask) == 0x01;
+int is_other_mcast(const unsigned char mac_address[ETH_ALEN]){
+    return (mac_address[0] & 0x01);
 }
 
-bool is_broadcast(unsigned char mac_address[ETH_ALEN]){
-    return compare_mac_prefix(BROADCAST, mac_address, ETH_ALEN);
+int is_broadcast(const unsigned char mac_address[ETH_ALEN]){
+    return !__builtin_memcmp(BROADCAST, mac_address, ETH_ALEN);
 }

@@ -4,6 +4,7 @@ ARG GO_VERSION
 FROM --platform=amd64 ubuntu:24.04 as ebpfbuilder
 
 WORKDIR /build
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 RUN apt update && apt install clang libbpf-dev make -y
 ADD . ./
 RUN make build_xdp
