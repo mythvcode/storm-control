@@ -52,6 +52,14 @@ static __always_inline __be16 get_h_proto(struct ethhdr *eth, void *data_end) {
     return vlan->h_vlan_encapsulated_proto;
 }
 
+static __always_inline int is_ipv4_multicast_proto(__be16 h_proto) {
+    return bpf_ntohs(h_proto) == ETH_P_IP;
+}
+
+static __always_inline int is_ipv6_multicast_proto(__be16 h_proto) {
+    return bpf_ntohs(h_proto) == ETH_P_IPV6;
+}
+
 static __always_inline void increment_pass_stat(packet_counter *count_s, p_type pt) {
     traffic_desc *desc[] = { &count_s->broadcast, &count_s->ipv4_mcast, 
                              &count_s->ipv6_mcast, &count_s->other_mcast };
@@ -85,18 +93,19 @@ static __always_inline int get_xdp_action(__u32 ifindex, p_type pt){
         return XDP_DROP;
     }
     increment_pass_stat(count_s, pt);
+
     return XDP_PASS;
 }
 
 // calculate packets and return xdp_action
-static __always_inline int calculate_pkt(struct ethhdr *eth, __u32 ifindex, __u16 h_proto) {
+static __always_inline int calculate_pkt(struct ethhdr *eth, void *data_end, __u32 ifindex) {
     if (is_broadcast(eth->h_dest)){
         return get_xdp_action(ifindex, Broadcast);
 
-    } else if (is_ipv4_mcast(eth->h_dest) && h_proto==ETH_P_IP){
+    } else if (is_ipv4_mcast(eth->h_dest) && is_ipv4_multicast_proto(get_h_proto(eth, data_end))){
         return get_xdp_action(ifindex, IPv4MCast);
 
-    } else if (is_ipv6_mcast(eth->h_dest) && h_proto==ETH_P_IPV6){
+    } else if (is_ipv6_mcast(eth->h_dest) && is_ipv6_multicast_proto(get_h_proto(eth, data_end))){
         return get_xdp_action(ifindex, IPv6MCast);
 
     } else if (is_other_mcast(eth->h_dest)){
@@ -117,5 +126,5 @@ int storm_control(struct xdp_md *ctx)
         return XDP_PASS;
     }
 
-    return calculate_pkt(eth, ctx->ingress_ifindex, bpf_ntohs(get_h_proto(eth, data_end)));
+    return calculate_pkt(eth, data_end, ctx->ingress_ifindex);
 }
