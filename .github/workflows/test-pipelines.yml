@@ -67,6 +67,7 @@ jobs:
           build-args: |
             GO_VERSION=${{ vars.GO_VERSION }}
           push: false
+          outputs: type=docker
           tags: |
             ghcr.io/${{ github.repository_owner }}/storm-control:${{ github.sha }}
 
