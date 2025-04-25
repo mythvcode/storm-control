@@ -1,0 +1,46 @@
+name: Security Scans
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  govulncheck_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ vars.GO_VERSION }}
+      - name: Install dependencies
+        run: go mod download
+      - name: Run govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+  semgrep_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Semgrep
+        run: |
+          pip install semgrep
+      - name: Run Semgrep analysis
+        run: semgrep --config=auto .
+
+  trivy_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+      - name: Run Trivy image scan
+        run: |
+          trivy image --severity HIGH,CRITICAL ghcr.io/${{ github.repository_owner }}/storm-control:latest
