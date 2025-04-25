@@ -64,6 +64,7 @@ jobs:
       - name: Build docker image
         uses: docker/build-push-action@v6
         with:
+          driver-opts: network=host
           context: .
           platforms: linux/amd64,linux/arm64
           build-args: |
