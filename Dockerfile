@@ -1,7 +1,7 @@
 ARG GO_VERSION
 
 # Build ebpf program
-FROM --platform=amd64 ubuntu:24.04 as ebpfbuilder
+FROM --platform=amd64 ubuntu:24.04 AS ebpfbuilder
 
 WORKDIR /build
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
@@ -10,7 +10,7 @@ ADD . ./
 RUN make build_xdp
 
 # Build userspace ebpf program
-FROM golang:${GO_VERSION} as gobuilder
+FROM golang:${GO_VERSION} AS gobuilder
 
 WORKDIR /build
 ADD . ./
