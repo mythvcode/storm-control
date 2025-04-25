@@ -1,5 +1,10 @@
-LIBC_HEADERS=/usr/include/x86_64-linux-gnu
-GOLANG_CI_VERSION ?= 'v1.59.1'
+LIBC_HEADERS=$(shell \
+    if [ -d "/usr/include/aarch64-linux-gnu" ]; then \
+        echo "/usr/include/aarch64-linux-gnu"; \
+    else \
+        echo "/usr/include/x86_64-linux-gnu"; \
+    fi)
+GOLANG_CI_VERSION ?= 'v1.64.8'
 
 build:
 	CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o storm-control ./cmd/stormcontrol

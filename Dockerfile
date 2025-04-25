@@ -1,7 +1,7 @@
-ARG GO_VERSION
+ARG GO_VERSION=latest
 
 # Build ebpf program
-FROM --platform=amd64 ubuntu:24.04 AS ebpfbuilder
+FROM ubuntu:24.04 AS ebpfbuilder
 
 WORKDIR /build
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
