@@ -13,6 +13,7 @@ import (
 
 type eBPFProg interface {
 	AttachXDP(devIndex int) error
+	DetachXDP(ndev int) error
 	ForceDetachXDP(devIndex int)
 	GetDevStat(devIndex int) (ebpfloader.PacketCounter, error)
 	GetDevDropCfg(devIndex int) (ebpfloader.DropPKT, error)
@@ -135,7 +136,10 @@ func (w *Watcher) cleanNetDev() {
 			w.log.Infof("Interface %s not found stop watch process", devWatcher.devInfo())
 			devWatcher.stop()
 			delete(w.devWatcherMap, devWatcher.index())
-			w.ebpfProg.ForceDetachXDP(devWatcher.index())
+			if err := w.ebpfProg.DetachXDP(devWatcher.index()); err != nil {
+				w.log.Errorf("Error detach xdp program from interface %s: %s", devWatcher.netDevName, err.Error())
+				w.ebpfProg.ForceDetachXDP(devWatcher.index())
+			}
 		}
 	}
 }
@@ -165,13 +169,16 @@ func (w *Watcher) Start() {
 func (w *Watcher) Stop() {
 	w.log.Infof("Stop device watcher")
 	close(w.closed)
-	w.StopDevWatchers()
+	w.stopDevWatchers()
 	w.ebpfProg.Close()
 }
 
-func (w *Watcher) StopDevWatchers() {
+func (w *Watcher) stopDevWatchers() {
 	for _, devWatcher := range w.devWatcherMap {
 		devWatcher.stop()
-		w.ebpfProg.ForceDetachXDP(devWatcher.index())
+		if err := w.ebpfProg.DetachXDP(devWatcher.index()); err != nil {
+			w.log.Errorf("Error detach xdp program from interface %s: %s", devWatcher.netDevName, err.Error())
+			w.ebpfProg.ForceDetachXDP(devWatcher.index())
+		}
 	}
 }
