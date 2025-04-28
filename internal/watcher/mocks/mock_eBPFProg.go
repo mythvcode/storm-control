@@ -98,6 +98,52 @@ func (_c *MockeBPFProg_Close_Call) RunAndReturn(run func()) *MockeBPFProg_Close_
 	return _c
 }
 
+// DetachXDP provides a mock function with given fields: ndev
+func (_m *MockeBPFProg) DetachXDP(ndev int) error {
+	ret := _m.Called(ndev)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DetachXDP")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(int) error); ok {
+		r0 = rf(ndev)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockeBPFProg_DetachXDP_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DetachXDP'
+type MockeBPFProg_DetachXDP_Call struct {
+	*mock.Call
+}
+
+// DetachXDP is a helper method to define mock.On call
+//   - ndev int
+func (_e *MockeBPFProg_Expecter) DetachXDP(ndev interface{}) *MockeBPFProg_DetachXDP_Call {
+	return &MockeBPFProg_DetachXDP_Call{Call: _e.mock.On("DetachXDP", ndev)}
+}
+
+func (_c *MockeBPFProg_DetachXDP_Call) Run(run func(ndev int)) *MockeBPFProg_DetachXDP_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(int))
+	})
+	return _c
+}
+
+func (_c *MockeBPFProg_DetachXDP_Call) Return(_a0 error) *MockeBPFProg_DetachXDP_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockeBPFProg_DetachXDP_Call) RunAndReturn(run func(int) error) *MockeBPFProg_DetachXDP_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ForceDetachXDP provides a mock function with given fields: devIndex
 func (_m *MockeBPFProg) ForceDetachXDP(devIndex int) {
 	_m.Called(devIndex)

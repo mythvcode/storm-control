@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net"
 	"regexp"
@@ -150,7 +151,28 @@ func TestDetachProg(t *testing.T) {
 		}, nil
 	}
 	defer setListInterfaceFunc()
+	ebpfMock.EXPECT().DetachXDP(123).Return(nil)
+	ebpfMock.EXPECT().DetachXDP(5).Return(nil)
+	watcher.cleanNetDev()
+}
+
+func TestForceDetachProg(t *testing.T) {
+	watcher, ebpfMock := makeTestWatcher(t)
+	ebpfMock.EXPECT().AttachXDP(1).Return(nil)
+	ebpfMock.EXPECT().AttachXDP(123).Return(nil)
+	ebpfMock.EXPECT().AttachXDP(5).Return(nil)
+	watcher.findAndAttachNetDev()
+	listInterfaces = func() ([]net.Interface, error) {
+		return []net.Interface{
+			{
+				Index: 1,
+				Name:  "tap1",
+			},
+		}, nil
+	}
+	defer setListInterfaceFunc()
+	ebpfMock.EXPECT().DetachXDP(123).Return(errors.New("Error detach program"))
 	ebpfMock.EXPECT().ForceDetachXDP(123)
-	ebpfMock.EXPECT().ForceDetachXDP(5)
+	ebpfMock.EXPECT().DetachXDP(5).Return(nil)
 	watcher.cleanNetDev()
 }
