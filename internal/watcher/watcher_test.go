@@ -73,6 +73,7 @@ func makeTestWatcher(t *testing.T) (*Watcher, *mocks.MockeBPFProg) {
 		config:        config.WatcherConfig{DevRegEx: netDevRegexp, BlockEnabled: false},
 		netDevReg:     regexp.MustCompile(netDevRegexp),
 		log:           logger.GetLogger(),
+		closed:        make(chan struct{}),
 	}, ebpMock
 }
 
@@ -175,4 +176,18 @@ func TestForceDetachProg(t *testing.T) {
 	ebpfMock.EXPECT().ForceDetachXDP(123)
 	ebpfMock.EXPECT().DetachXDP(5).Return(nil)
 	watcher.cleanNetDev()
+}
+
+func TestStopWatcher(t *testing.T) {
+	watcher, ebpfMock := makeTestWatcher(t)
+	ebpfMock.EXPECT().AttachXDP(1).Return(nil)
+	ebpfMock.EXPECT().AttachXDP(123).Return(nil)
+	ebpfMock.EXPECT().AttachXDP(5).Return(nil)
+	watcher.findAndAttachNetDev()
+	ebpfMock.EXPECT().DetachXDP(1).Return(errors.New("Error detach program"))
+	ebpfMock.EXPECT().ForceDetachXDP(1)
+	ebpfMock.EXPECT().DetachXDP(123).Return(nil)
+	ebpfMock.EXPECT().DetachXDP(5).Return(nil)
+	ebpfMock.EXPECT().Close()
+	watcher.Stop()
 }

@@ -169,11 +169,11 @@ func (w *Watcher) Start() {
 func (w *Watcher) Stop() {
 	w.log.Infof("Stop device watcher")
 	close(w.closed)
-	w.StopDevWatchers()
+	w.stopDevWatchers()
 	w.ebpfProg.Close()
 }
 
-func (w *Watcher) StopDevWatchers() {
+func (w *Watcher) stopDevWatchers() {
 	for _, devWatcher := range w.devWatcherMap {
 		devWatcher.stop()
 		if err := w.ebpfProg.DetachXDP(devWatcher.index()); err != nil {
