@@ -69,6 +69,7 @@ static __always_inline void increment_pass_stat(packet_counter *count_s, p_type 
     }
 }
 
+
 static __always_inline int get_xdp_action(__u32 ifindex, p_type pt){
     drop_pkt *drop_desc = bpf_map_lookup_elem(&drop_intf, &ifindex);
     packet_counter *count_s = bpf_map_lookup_elem(&intf_stats, &ifindex);
@@ -97,18 +98,21 @@ static __always_inline int get_xdp_action(__u32 ifindex, p_type pt){
     return XDP_PASS;
 }
 
+
 // calculate packets and return xdp_action
 static __always_inline int calculate_pkt(struct ethhdr *eth, void *data_end, __u32 ifindex) {
     if (is_broadcast(eth->h_dest)){
         return get_xdp_action(ifindex, Broadcast);
 
-    } else if (is_ipv4_mcast(eth->h_dest) && is_ipv4_multicast_proto(get_h_proto(eth, data_end))){
-        return get_xdp_action(ifindex, IPv4MCast);
+    } else if (is_multicast(eth->h_dest)){
+        __be16 h_proto = get_h_proto(eth, data_end);
 
-    } else if (is_ipv6_mcast(eth->h_dest) && is_ipv6_multicast_proto(get_h_proto(eth, data_end))){
-        return get_xdp_action(ifindex, IPv6MCast);
+        if (is_ipv4_mcast(eth->h_dest) && is_ipv4_multicast_proto(h_proto))
+            return get_xdp_action(ifindex, IPv4MCast);
 
-    } else if (is_other_mcast(eth->h_dest)){
+        if (is_ipv6_mcast(eth->h_dest) && is_ipv6_multicast_proto(h_proto))
+            return get_xdp_action(ifindex, IPv6MCast);
+
         return get_xdp_action(ifindex, GenericMCast);
     }
 

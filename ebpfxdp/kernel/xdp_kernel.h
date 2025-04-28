@@ -48,7 +48,7 @@ int is_ipv6_mcast(const unsigned char mac_address[ETH_ALEN]){
     return !__builtin_memcmp(IPV6_MAC_PREFIX, mac_address, 2);
 }
 
-int is_other_mcast(const unsigned char mac_address[ETH_ALEN]){
+int is_multicast(const unsigned char mac_address[ETH_ALEN]){
     return (mac_address[0] & 0x01);
 }
 
