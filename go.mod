@@ -1,6 +1,6 @@
 module github.com/mythvcode/storm-control
 
-go 1.24
+go 1.24.2
 
 require (
 	github.com/cilium/ebpf v0.16.0
