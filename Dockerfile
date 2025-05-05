@@ -25,6 +25,8 @@ RUN addgroup --gid 39555 storm_control && \
     adduser -h /app -s /bin/sh -G storm_control -u 39555 -D storm_control
 WORKDIR /app/
 COPY --from=gobuilder /build/storm-control .
+# required capabilities for start storm-control
+RUN apk add libcap && setcap cap_net_admin,cap_perfmon,cap_bpf=ep ./storm-control && apk del libcap
 
 USER storm_control
 
