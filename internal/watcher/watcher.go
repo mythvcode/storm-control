@@ -159,7 +159,7 @@ func (w *Watcher) startDynamicWatcher() {
 }
 
 func (w *Watcher) Start() {
-	w.log.Infof("Start device watcher drop")
+	w.log.Infof("Start device watcher")
 	if !w.config.BlockEnabled {
 		w.log.Warningf("Block action disabled!")
 	}
