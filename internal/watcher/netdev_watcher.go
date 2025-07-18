@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/mythvcode/storm-control/internal/config"
 	"github.com/mythvcode/storm-control/internal/ebpfloader"
 	"github.com/mythvcode/storm-control/internal/logger"
 )
@@ -25,14 +26,13 @@ const (
 )
 
 type netDevWatcher struct {
-	netDevIndex      int
-	netDevName       string
-	blockThreshold   uint64
-	unblockThreshold uint64
-	dropDelay        time.Duration
-	stopChan         chan struct{}
-	ebpfProg         eBPFProg
-	dropMapMux       sync.Mutex
+	netDevIndex int
+	netDevName  string
+	cfg         config.WatcherConfig
+	dropDelay   time.Duration
+	stopChan    chan struct{}
+	ebpfProg    eBPFProg
+	dropMapMux  sync.Mutex
 
 	dropState dropStateConfig
 	log       *logger.Logger
@@ -73,19 +73,18 @@ func (u *updateDropConfig) isEmpty() bool {
 func newNetDevWatcher(
 	netDev int,
 	netDevName string,
-	blockThreshold uint64,
+	cfg config.WatcherConfig,
 	dropDelay time.Duration,
 	ebpfProg eBPFProg,
 ) *netDevWatcher {
 	return &netDevWatcher{
-		netDevIndex:      netDev,
-		netDevName:       netDevName,
-		blockThreshold:   blockThreshold,
-		unblockThreshold: blockThreshold * 3,
-		dropDelay:        dropDelay,
-		stopChan:         make(chan struct{}),
-		ebpfProg:         ebpfProg,
-		log:              logger.GetLogger().With(slog.String(logger.Component, "NetDevWatcher")),
+		netDevIndex: netDev,
+		netDevName:  netDevName,
+		cfg:         cfg,
+		dropDelay:   dropDelay,
+		stopChan:    make(chan struct{}),
+		ebpfProg:    ebpfProg,
+		log:         logger.GetLogger().With(slog.String(logger.Component, "NetDevWatcher")),
 	}
 }
 
@@ -163,7 +162,7 @@ func (n *netDevWatcher) releaseBlockState(trafType int) {
 func (n *netDevWatcher) checkAndUnblock(prevStats, curState *ebpfloader.PacketCounter, trafType int) (bool, error) { //nolint
 	switch trafType {
 	case broadcastType:
-		if (curState.Broadcast.Dropped - prevStats.Broadcast.Dropped) < n.unblockThreshold {
+		if (curState.Broadcast.Dropped - prevStats.Broadcast.Dropped) < n.cfg.BroadcastThreshold {
 			if err := n.updateDropMap(updateDropConfig{br: unblockAction}); err != nil {
 				return false, err
 			}
@@ -173,7 +172,7 @@ func (n *netDevWatcher) checkAndUnblock(prevStats, curState *ebpfloader.PacketCo
 		}
 
 	case ipv4McastType:
-		if (curState.IPv4MCast.Dropped - prevStats.IPv4MCast.Dropped) < n.unblockThreshold {
+		if (curState.IPv4MCast.Dropped - prevStats.IPv4MCast.Dropped) < n.cfg.IPV4McastThreshold {
 			if err := n.updateDropMap(updateDropConfig{ipv4: unblockAction}); err != nil {
 				return false, err
 			}
@@ -183,7 +182,7 @@ func (n *netDevWatcher) checkAndUnblock(prevStats, curState *ebpfloader.PacketCo
 		}
 
 	case ipv6McastType:
-		if (curState.IPv6MCast.Dropped - prevStats.IPv6MCast.Dropped) < n.unblockThreshold {
+		if (curState.IPv6MCast.Dropped - prevStats.IPv6MCast.Dropped) < n.cfg.IPV6McastThreshold {
 			if err := n.updateDropMap(updateDropConfig{ipv6: unblockAction}); err != nil {
 				return false, err
 			}
@@ -192,7 +191,7 @@ func (n *netDevWatcher) checkAndUnblock(prevStats, curState *ebpfloader.PacketCo
 			return true, nil
 		}
 	case otherType:
-		if (curState.OtherMcast.Dropped - prevStats.OtherMcast.Dropped) < n.unblockThreshold {
+		if (curState.OtherMcast.Dropped - prevStats.OtherMcast.Dropped) < n.cfg.GenericMcastThreshold {
 			if err := n.updateDropMap(updateDropConfig{other: unblockAction}); err != nil {
 				return false, err
 			}
@@ -284,20 +283,20 @@ func (n *netDevWatcher) getCalculateStatsFuc() func(statStruct ebpfloader.Packet
 
 	return func(curStats ebpfloader.PacketCounter) updateDropConfig {
 		blockStruct := updateDropConfig{}
-		if (curStats.Broadcast.Passed - stats.Broadcast.Passed) > n.blockThreshold {
+		if (curStats.Broadcast.Passed - stats.Broadcast.Passed) > n.cfg.BroadcastThreshold {
 			n.log.Debugf("Block broadcast traffic %s", n.devInfo())
 			blockStruct.br = blockAction
 		}
-		if (curStats.IPv4MCast.Passed - stats.IPv4MCast.Passed) > n.blockThreshold {
+		if (curStats.IPv4MCast.Passed - stats.IPv4MCast.Passed) > n.cfg.IPV4McastThreshold {
 			n.log.Debugf("Block IPv4 multicast traffic %s", n.devInfo())
 			blockStruct.ipv4 = blockAction
 		}
-		if (curStats.IPv6MCast.Passed - stats.IPv6MCast.Passed) > n.blockThreshold {
+		if (curStats.IPv6MCast.Passed - stats.IPv6MCast.Passed) > n.cfg.IPV6McastThreshold {
 			n.log.Debugf("Block IPv6 multicast traffic %s", n.devInfo())
 			blockStruct.ipv6 = blockAction
 		}
 
-		if (curStats.OtherMcast.Passed - stats.OtherMcast.Passed) > n.blockThreshold {
+		if (curStats.OtherMcast.Passed - stats.OtherMcast.Passed) > n.cfg.GenericMcastThreshold {
 			n.log.Debugf("Block other multicast traffic %s", n.devInfo())
 			blockStruct.other = blockAction
 		}

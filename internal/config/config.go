@@ -23,11 +23,14 @@ type LoggerConfig struct {
 }
 
 type WatcherConfig struct {
-	BlockDelay     int      `default:"10"             env:"BLOCK_DELAY"     yaml:"block_delay"`
-	BlockEnabled   bool     `default:"false"          env:"BLOCK_ENABLED"   yaml:"block_enabled"`
-	BlockThreshold uint64   `default:"100"            env:"BLOCK_THRESHOLD" yaml:"block_threshold"`
-	StaticDevList  []string `default:"[]"             env:"STATIC_DEV_LIST" yaml:"device_list"`
-	DevRegEx       string   `default:"^tap.{8}-.{2}$" env:"DEV_REGEX"       yaml:"device_regex"`
+	BlockDelay            int      `default:"10"             env:"BLOCK_DELAY"             yaml:"block_delay"`
+	BlockEnabled          bool     `default:"false"          env:"BLOCK_ENABLED"           yaml:"block_enabled"`
+	BroadcastThreshold    uint64   `default:"100"            env:"BROADCAST_THRESHOLD"     yaml:"broadcast_threshold"`
+	IPV4McastThreshold    uint64   `default:"100"            env:"IPV4_MCAST_THRESHOLD"    yaml:"ipv4_mcast_threshold"`
+	IPV6McastThreshold    uint64   `default:"100"            env:"IPV6_MCAST_THRESHOLD"    yaml:"ipv6_mcast_threshold"`
+	GenericMcastThreshold uint64   `default:"100"            env:"GENERIC_MCAST_THRESHOLD" yaml:"generic_mcast_threshold"`
+	StaticDevList         []string `default:"[]"             env:"STATIC_DEV_LIST"         yaml:"device_list"`
+	DevRegEx              string   `default:"^tap.{8}-.{2}$" env:"DEV_REGEX"               yaml:"device_regex"`
 }
 
 type Exporter struct {

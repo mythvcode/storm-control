@@ -14,7 +14,10 @@ LOG_LEVEL                       | logger:level                   | debug        
 LOG_FILE                        | logger:file                    |                             | Log file (if not specified when stdout)                                                |
 BLOCK_DELAY                     | watcher:block_delay            | 10                          | Time duration in seconds before the unblock process initiates, after the block action. |
 BLOCK_ENABLED                   | watcher:block_enabled          | false                       | Enable block action in case of detected storm control                                  |
-BLOCK_THRESHOLD                 | watcher:block_threshold        | 100                         | Threshold of broadcast and multicast packets to trigger block action                   |
+BROADCAST_THRESHOLD             | watcher:broadcast_threshold    | 100                         | Threshold of broadcast packets that trigger a block action                             |
+IPV4_MCAST_THRESHOLD            | watcher:ipv4_mcast_threshold   | 100                         | Threshold of IPv4 multicast packets that trigger a block action                        |
+IPV6_MCAST_THRESHOLD            | watcher:ipv6_mcast_threshold   | 100                         | Threshold of IPv6 multicast packets that trigger a block action                        |
+GENERIC_MCAST_THRESHOLD         | watcher:generic_mcast_threshold| 100                         | Threshold of non-IPv4/IPv6 multicast packets that trigger a block action               |
 STATIC_DEV_LIST                 | watcher:device_list            |                             | Static interface list if specified when device_regex is not checked                    |
 DEV_REGEX                       | watcher:device_regex           | ^tap.{8}-.{2}$              | Regexp for search interfaces to monitor                                                |
 EXPORTER_HOST                   | exporter:host                  | localhost                   | Exporter host to bind                                                                  |
