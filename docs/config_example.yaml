@@ -6,7 +6,10 @@ logger:
 watcher:
   block_delay: 10 # seconds
   block_enabled: false
-  block_threshold: 100 # packet count per second
+  broadcast_threshold: 100     # packet count per second
+  ipv4_mcast_threshold: 100    # packet count per second
+  ipv6_mcast_threshold: 100    # packet count per second
+  generic_mcast_threshold: 100 # packet count per second
   device_list: []
   device_regex: ^tap.{8}-.{2}$
 exporter:

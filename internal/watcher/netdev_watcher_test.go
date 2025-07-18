@@ -4,16 +4,28 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/mythvcode/storm-control/internal/config"
 	"github.com/mythvcode/storm-control/internal/ebpfloader"
 	"github.com/mythvcode/storm-control/internal/watcher/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
+func createWatcherConfig(t *testing.T) config.WatcherConfig {
+	t.Helper()
+
+	return config.WatcherConfig{
+		BroadcastThreshold:    10,
+		IPV4McastThreshold:    10,
+		IPV6McastThreshold:    10,
+		GenericMcastThreshold: 10,
+	}
+}
+
 func createWatcher(t *testing.T) *netDevWatcher {
 	t.Helper()
 
-	return newNetDevWatcher(1, "test_name", 10, 0, mocks.NewMockeBPFProg(t))
+	return newNetDevWatcher(1, "test_name", createWatcherConfig(t), 0, mocks.NewMockeBPFProg(t))
 }
 
 func TestAcquireBlockState(t *testing.T) {
@@ -83,7 +95,7 @@ func TestReleaseBlockState(t *testing.T) {
 func TestDevInfo(t *testing.T) {
 	ebpfProg := mocks.NewMockeBPFProg(t)
 
-	watchr := newNetDevWatcher(1, "test_name", 10, 0, ebpfProg)
+	watchr := newNetDevWatcher(1, "test_name", createWatcherConfig(t), 0, ebpfProg)
 	res := watchr.devInfo()
 	require.Equal(t, "test_name (1)", res)
 }
@@ -94,7 +106,7 @@ func TestUpdateDropConf(t *testing.T) {
 	ebpfProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{Broadcast: 1}).Return(nil)
 	ebpfProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{IPv4MCast: 1}).Return(nil)
 	ebpfProg.EXPECT().UpdateDevDropCfg(1, ebpfloader.DropPKT{IPv6MCast: 1, Multicast: 1}).Return(nil)
-	watchr := newNetDevWatcher(1, "test_name", 10, 0, ebpfProg)
+	watchr := newNetDevWatcher(1, "test_name", createWatcherConfig(t), 0, ebpfProg)
 	require.NoError(t, watchr.updateDropMap(updateDropConfig{br: blockAction}))
 	require.NoError(t, watchr.updateDropMap(updateDropConfig{ipv4: blockAction}))
 	require.NoError(t, watchr.updateDropMap(updateDropConfig{ipv6: blockAction, other: blockAction}))
@@ -118,7 +130,7 @@ func TestCalculateStats(t *testing.T) {
 
 func TestCheckUnblockError(t *testing.T) {
 	ebpfProg := mocks.NewMockeBPFProg(t)
-	watcher := newNetDevWatcher(1, "test_name", 10, 0, ebpfProg)
+	watcher := newNetDevWatcher(1, "test_name", createWatcherConfig(t), 0, ebpfProg)
 	unblock, err := watcher.checkAndUnblock(
 		&ebpfloader.PacketCounter{Broadcast: ebpfloader.TrafInfo{Dropped: 100}},
 		&ebpfloader.PacketCounter{Broadcast: ebpfloader.TrafInfo{Dropped: 200}},
@@ -198,7 +210,7 @@ func TestCheckUnblock(t *testing.T) {
 	}
 	for _, tCase := range tCases {
 		ebpfProg := mocks.NewMockeBPFProg(t)
-		watcher := newNetDevWatcher(1, "test_name", 10, 0, ebpfProg)
+		watcher := newNetDevWatcher(1, "test_name", createWatcherConfig(t), 0, ebpfProg)
 		tCase.initMock(ebpfProg)
 		unblocked, err := tCase.unblockCheck(watcher)
 		require.NoError(t, err)

@@ -20,6 +20,7 @@ type eBPFProg interface {
 	UpdateDevDropCfg(devIndex int, cfg ebpfloader.DropPKT) error
 	Close()
 }
+
 type Watcher struct {
 	devWatcherMap map[int]*netDevWatcher
 	ebpfProg      eBPFProg
@@ -61,7 +62,7 @@ func (w *Watcher) makeNetDevWatcher(netDev int, netDevName string) *netDevWatche
 	return newNetDevWatcher(
 		netDev,
 		netDevName,
-		w.config.BlockThreshold,
+		w.config,
 		time.Duration(w.config.BlockDelay)*time.Second,
 		w.ebpfProg,
 	)

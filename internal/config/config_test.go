@@ -16,7 +16,10 @@ logger:
 watcher:
   block_delay: 123
   block_enabled: true
-  block_threshold: 555
+  broadcast_threshold: 555
+  ipv4_mcast_threshold: 111
+  ipv6_mcast_threshold: 121
+  generic_mcast_threshold: 500
   device_list:
   - eth5
   - eth55 
@@ -37,7 +40,10 @@ func testDefaults(t *testing.T, cfg StormControlConfig) {
 	require.Empty(t, cfg.Logger.File)
 	require.Equal(t, "debug", cfg.Logger.Level)
 	require.Equal(t, 10, cfg.Watcher.BlockDelay)
-	require.Equal(t, uint64(100), cfg.Watcher.BlockThreshold)
+	require.Equal(t, uint64(100), cfg.Watcher.BroadcastThreshold)
+	require.Equal(t, uint64(100), cfg.Watcher.IPV4McastThreshold)
+	require.Equal(t, uint64(100), cfg.Watcher.IPV6McastThreshold)
+	require.Equal(t, uint64(100), cfg.Watcher.GenericMcastThreshold)
 	require.Equal(t, `^tap.{8}-.{2}$`, cfg.Watcher.DevRegEx)
 	require.False(t, cfg.Watcher.BlockEnabled)
 	require.Empty(t, cfg.Watcher.StaticDevList)
@@ -73,7 +79,19 @@ func setEnvVars(t *testing.T) {
 			"true",
 		},
 		{
-			"BLOCK_THRESHOLD",
+			"IPV4_MCAST_THRESHOLD",
+			"111111",
+		},
+		{
+			"IPV6_MCAST_THRESHOLD",
+			"1010101",
+		},
+		{
+			"GENERIC_MCAST_THRESHOLD",
+			"12345",
+		},
+		{
+			"BROADCAST_THRESHOLD",
 			"55555",
 		},
 		{
@@ -143,7 +161,10 @@ func TestLoadFromEnv(t *testing.T) {
 	require.Equal(t, "env_log_level", cfg.Logger.Level)
 	require.Equal(t, 12345, cfg.Watcher.BlockDelay)
 	require.True(t, cfg.Watcher.BlockEnabled)
-	require.Equal(t, uint64(55555), cfg.Watcher.BlockThreshold)
+	require.Equal(t, uint64(55555), cfg.Watcher.BroadcastThreshold)
+	require.Equal(t, uint64(111111), cfg.Watcher.IPV4McastThreshold)
+	require.Equal(t, uint64(1010101), cfg.Watcher.IPV6McastThreshold)
+	require.Equal(t, uint64(12345), cfg.Watcher.GenericMcastThreshold)
 	require.Equal(t, "test_env_regexp", cfg.Watcher.DevRegEx)
 	require.Equal(t, []string{"eth1", "eth2"}, cfg.Watcher.StaticDevList)
 	require.False(t, cfg.Exporter.Enable)
@@ -162,7 +183,10 @@ func TestLoadFromFile(t *testing.T) {
 	require.Equal(t, "info", cfg.Logger.Level)
 	require.Equal(t, 123, cfg.Watcher.BlockDelay)
 	require.True(t, cfg.Watcher.BlockEnabled)
-	require.Equal(t, uint64(555), cfg.Watcher.BlockThreshold)
+	require.Equal(t, uint64(555), cfg.Watcher.BroadcastThreshold)
+	require.Equal(t, uint64(111), cfg.Watcher.IPV4McastThreshold)
+	require.Equal(t, uint64(121), cfg.Watcher.IPV6McastThreshold)
+	require.Equal(t, uint64(500), cfg.Watcher.GenericMcastThreshold)
 	require.Equal(t, "test_regex", cfg.Watcher.DevRegEx)
 	require.Equal(t, []string{"eth5", "eth55"}, cfg.Watcher.StaticDevList)
 	require.False(t, cfg.Exporter.Enable)
