@@ -4,7 +4,8 @@ LIBC_HEADERS=$(shell \
     else \
         echo "/usr/include/x86_64-linux-gnu"; \
     fi)
-GOLANG_CI_VERSION ?= 'v1.64.8'
+GOLANG_CI_VERSION ?= 'v2.12.2'
+GOPATH := $(shell go env GOPATH)
 
 build:
 	CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o storm-control ./cmd/stormcontrol
@@ -37,4 +38,4 @@ clean:
 	rm -rf ./storm-control
 
 install_linter:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin $(GOLANG_CI_VERSION)
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin $(GOLANG_CI_VERSION)
