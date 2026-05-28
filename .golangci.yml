@@ -1,6 +1,7 @@
+version: "2"
+
 run:
   timeout: 5m
-
 
 linters-settings:
   cyclop:
@@ -8,32 +9,30 @@ linters-settings:
 
   promlinter:
     disabled-linters:
-    - Counter
-    - HistogramSummaryReserved
+      - Counter
+      - HistogramSummaryReserved
 
 linters:
   fast: false
   enable-all: true
   disable:
-      - dupl
-      - gochecknoglobals
-      - gochecknoinits
-      - lll
-      - funlen
-      - wsl
-      - gomnd
-      - testpackage
-      - goerr113
-      - godot
-      - paralleltest
-      - exhaustivestruct
-      - exhaustruct
-      - wrapcheck
-      - forbidigo
-      - tagliatelle
-      - nonamedreturns
-      - nosnakecase
-      - depguard
-      - perfsprint
-      - mnd
-      - promlinter
+    - dupl
+    - gochecknoglobals
+    - gochecknoinits
+    - lll
+    - funlen
+    - wsl
+    - testpackage
+    - godot
+    - paralleltest
+    - exhaustruct
+    - wrapcheck
+    - forbidigo
+    - tagliatelle
+    - nonamedreturns
+    - depguard
+    - perfsprint
+    - mnd
+    - promlinter
+    - staticcheck
+

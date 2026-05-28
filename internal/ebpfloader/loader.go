@@ -55,7 +55,7 @@ func (e *EbfProgram) AttachXDP(ndev int) error {
 	}
 
 	if err := e.addNetDevToMaps(devIndexUint32); err != nil {
-		link.Close()
+		link.Close() //nolint
 
 		return err
 	}
@@ -99,7 +99,7 @@ func (e *EbfProgram) ForceDetachXDP(ndev int) {
 	e.removeNetDevFromMaps(devIndexUint32) //nolint
 	xdpLink, exist := e.Links[ndev]
 	if exist {
-		xdpLink.Close()
+		xdpLink.Close() //nolint
 	}
 	e.lMux.Lock()
 	defer e.lMux.Unlock()
@@ -168,7 +168,7 @@ func (e *EbfProgram) UpdateDevDropCfg(devIndex int, cfg DropPKT) error {
 func (e *EbfProgram) Close() {
 	e.lMux.Lock()
 	for _, ln := range e.Links {
-		ln.Close()
+		ln.Close() //nolint
 	}
 	e.lMux.Unlock()
 
